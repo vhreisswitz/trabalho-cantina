@@ -1,8 +1,12 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Login from './Login';
-import Home from './Home';
+import Login from './screens/login';
+import Home from './screens/home';
+import Historico from './screens/historico';
+
 
 const Stack = createNativeStackNavigator();
 
