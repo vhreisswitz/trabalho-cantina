@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Bem-vindo ao aplicativo da cantina do Senai!!</Text>
+      <Text>Fichas da Cantina</Text>
       <StatusBar style="auto" />
     </View>
   );
