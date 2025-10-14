@@ -9,7 +9,7 @@ import {
   Switch,
 } from 'react-native';
 
-export default function App() {
+export default function Login() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
