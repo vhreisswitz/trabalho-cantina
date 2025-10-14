@@ -4,20 +4,20 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   Switch,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
 export default function Login() {
+  const navigation = useNavigation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [errors, setErrors] = useState({});
 
   const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
-
   const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
 
   const limparCampos = () => {
@@ -26,7 +26,7 @@ export default function Login() {
     setErrors({});
   };
 
-  const handleCadastrar = () => {
+  const handleCadastrar = async () => {
     const novosErros = {};
 
     if (!validarNome(nome)) novosErros.nome = 'Nome inválido. Use apenas letras e espaços.';
@@ -36,7 +36,25 @@ export default function Login() {
     setErrors(novosErros);
 
     if (Object.keys(novosErros).length === 0) {
-      Alert.alert('Entrou com sucesso!', `Nome: ${nome}\nMatrícula: ${matricula}`);
+      // Consulta o banco de dados
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('matricula', matricula);
+
+      if (error) {
+        console.log('Erro no banco:', error.message);
+        setErrors({ matricula: 'Erro de conexão' });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Usuário encontrado - vai para Home
+        navigation.navigate('Home');
+      } else {
+        // Usuário não encontrado
+        setErrors({ matricula: 'Matrícula não encontrada' });
+      }
     }
   };
 
