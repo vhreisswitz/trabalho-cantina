@@ -9,6 +9,7 @@ import {
   Switch,
   ScrollView,
 } from 'react-native';
+import { supabase } from '../services/database';
 
 // Componente de Verificação de Usuário
 function VerificarUsuario({ isDarkMode }) {
