@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { supabase } from './components/components';
 
 import React from 'react';
+import Login from './screens/login';
 
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
