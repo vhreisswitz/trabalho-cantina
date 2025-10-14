@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Switch,
 } from 'react-native';
+import { supabase } from '../services/database';
 
 export default function Login() {
   const [isDarkMode, setIsDarkMode] = useState(false);

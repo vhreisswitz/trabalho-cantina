@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { supabase } from '../src/config/supabase';
+import { supabase } from '../services/database';
 
 export default function Home() {
   const [produtos, setProdutos] = useState([]);
