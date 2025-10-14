@@ -1,46 +1,45 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
-
-const produtos = [
-  { id: '1', nome: 'Coxinha', preco: 5.0, imagem: 'https://via.placeholder.com/100' },
-  { id: '2', nome: 'Pastel', preco: 6.0, imagem: 'https://via.placeholder.com/100' },
-  { id: '3', nome: 'Suco', preco: 4.0, imagem: 'https://via.placeholder.com/100' },
-  { id: '4', nome: 'Sanduíche', preco: 8.0, imagem: 'https://via.placeholder.com/100' },
-];
+// screens/home.js
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { supabase } from '../src/config/supabase';
 
 export default function Home() {
-  const [carrinho, setCarrinho] = useState([]);
+  const [produtos, setProdutos] = useState([]);
 
-  const adicionarCarrinho = (produto) => {
-    setCarrinho([...carrinho, produto]);
-  };
+  useEffect(() => {
+    carregarProdutos();
+  }, []);
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.imagem }} style={styles.imagem} />
-      <View style={styles.info}>
-        <Text style={styles.nome}>{item.nome}</Text>
-        <Text style={styles.preco}>R$ {item.preco.toFixed(2)}</Text>
-        <TouchableOpacity
-          style={styles.botao}
-          onPress={() => adicionarCarrinho(item)}
-        >
-          <Text style={styles.textoBotao}>Adicionar</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  async function carregarProdutos() {
+    try {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('*');
+      
+      if (error) {
+        console.error('Erro ao carregar produtos:', error);
+      } else {
+        setProdutos(data);
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+    }
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Cantina do Senai</Text>
+      <Text style={styles.title}>Produtos da Cantina</Text>
       <FlatList
         data={produtos}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.lista}
+        keyExtractor={item => item.cod}
+        renderItem={({ item }) => (
+          <View style={styles.produtoItem}>
+            <Text style={styles.codigo}>{item.cod}</Text>
+            <Text style={styles.descricao}>{item.desc}</Text>
+            <Text style={styles.preco}>R$ {item.preco}</Text>
+          </View>
+        )}
       />
-      <Text style={styles.carrinho}>Itens no carrinho: {carrinho.length}</Text>
     </View>
   );
 }
@@ -48,64 +47,32 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    padding: 20,
+    backgroundColor: '#fff',
   },
-  titulo: {
-    fontSize: 28,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
   },
-  lista: {
-    paddingBottom: 20,
-  },
-  card: {
+  produtoItem: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  imagem: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-  },
-  info: {
-    flex: 1,
-    marginLeft: 15,
     justifyContent: 'space-between',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
-  nome: {
-    fontSize: 18,
+  codigo: {
     fontWeight: 'bold',
+    width: 50,
+  },
+  descricao: {
+    flex: 1,
+    marginLeft: 10,
   },
   preco: {
-    fontSize: 16,
-    color: '#666',
-  },
-  botao: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  textoBotao: {
-    color: '#fff',
     fontWeight: 'bold',
-  },
-  carrinho: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 10,
+    color: 'green',
   },
 });
