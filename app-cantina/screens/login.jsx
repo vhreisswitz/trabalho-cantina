@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Switch,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
-// Componente de Verificação de Usuário
 function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
     nome: '',
@@ -30,7 +30,6 @@ function VerificarUsuario({ isDarkMode }) {
     }));
   };
 
-  // Função que simula a verificação no banco (substitua pela chamada real do Supabase)
   async function verificarUsuario() {
     if (!formData.nome || !formData.matricula) {
       Alert.alert('Erro', 'Por favor, preencha nome e matrícula!');
@@ -46,26 +45,43 @@ function VerificarUsuario({ isDarkMode }) {
     setResultado(null);
 
     try {
-      // SIMULAÇÃO - SUBSTITUA POR CHAMADA REAL DO SUPABASE
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Exemplo de resposta simulada
-      const usuarioSimulado = {
-        id: 1,
-        nome: formData.nome,
-        matricula: formData.matricula,
-        senha: '••••••',
-        criado_em: new Date().toISOString()
-      };
+      // CONSULTA REAL NO SUPABASE - REMOVIDA A SIMULAÇÃO
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('matricula', formData.matricula)
+        .ilike('nome', `%${formData.nome.trim()}%`)
+        .single();
 
-      // Simula usuário encontrado (50% de chance)
-      const encontrado = Math.random() > 0.5;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setResultado({
+            status: 'NAO_ENCONTRADO',
+            mensagem: '❌ Usuário não encontrado!',
+            usuario: null
+          });
+        } else {
+          console.error('Erro na consulta:', error);
+          setResultado({
+            status: 'ERRO',
+            mensagem: `Erro na consulta: ${error.message}`,
+            usuario: null
+          });
+        }
+        return;
+      }
 
-      if (encontrado) {
+      if (data) {
         setResultado({
           status: 'ENCONTRADO',
           mensagem: '✅ Usuário encontrado com sucesso!',
-          usuario: usuarioSimulado
+          usuario: {
+            id: data.id,
+            nome: data.nome,
+            matricula: data.matricula,
+            senha: '••••••',
+            criado_em: data.created_at || data.criado_em || new Date().toISOString()
+          }
         });
       } else {
         setResultado({
