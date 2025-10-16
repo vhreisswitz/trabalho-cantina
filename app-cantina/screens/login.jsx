@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
+// Componente de Verificação de Usuário
 function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
     nome: '',
@@ -24,9 +25,9 @@ function VerificarUsuario({ isDarkMode }) {
   const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
 
   const handleInputChange = (name, value) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   };
 
@@ -42,44 +43,37 @@ function VerificarUsuario({ isDarkMode }) {
     }
 
     setCarregando(true);
+    setResultado(null);
 
     try {
-      // CONSULTA REAL NO SUPABASE - REMOVIDA A SIMULAÇÃO
+      // CONSULTA NO BANCO DE DADOS
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('matricula', formData.matricula)
-        .ilike('nome', `%${formData.nome.trim()}%`)
-        .single();
+        .ilike('nome', `%${formData.nome.trim()}%`);
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          setResultado({
-            status: 'NAO_ENCONTRADO',
-            mensagem: '❌ Usuário não encontrado!',
-            usuario: null
-          });
-        } else {
-          console.error('Erro na consulta:', error);
-          setResultado({
-            status: 'ERRO',
-            mensagem: `Erro na consulta: ${error.message}`,
-            usuario: null
-          });
-        }
+        console.error('Erro na consulta:', error);
+        setResultado({
+          status: 'ERRO',
+          mensagem: `Erro na consulta: ${error.message}`,
+          usuario: null
+        });
         return;
       }
 
-      if (data) {
+      if (data && data.length > 0) {
+        const usuarioEncontrado = data[0];
         setResultado({
           status: 'ENCONTRADO',
           mensagem: '✅ Usuário encontrado com sucesso!',
           usuario: {
-            id: data.id,
-            nome: data.nome,
-            matricula: data.matricula,
+            id: usuarioEncontrado.id,
+            nome: usuarioEncontrado.nome,
+            matricula: usuarioEncontrado.matricula,
             senha: '••••••',
-            criado_em: data.created_at || data.criado_em || new Date().toISOString()
+            criado_em: usuarioEncontrado.created_at || usuarioEncontrado.criado_em || new Date().toISOString()
           }
         });
       } else {
@@ -89,71 +83,373 @@ function VerificarUsuario({ isDarkMode }) {
           usuario: null
         });
       }
+
     } catch (err) {
-      Alert.alert('Erro', 'Ocorreu um erro ao verificar o usuário.');
+      console.error('Erro inesperado:', err);
+      setResultado({
+        status: 'ERRO',
+        mensagem: 'Erro interno do sistema',
+        usuario: null
+      });
     } finally {
       setCarregando(false);
     }
   }
 
+  const limparVerificacao = () => {
+    setFormData({ nome: '', matricula: '' });
+    setResultado(null);
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Nome:</Text>
+    <View style={[styles.verificacaoContainer, isDarkMode && styles.darkVerificacaoContainer]}>
+      <Text style={[styles.verificacaoTitle, isDarkMode && styles.darkText]}>
+        🔍 Verificar Usuário
+      </Text>
+
       <TextInput
-        style={styles.input}
-        placeholder="Digite seu nome"
+        style={[styles.input, isDarkMode && styles.darkInput]}
+        placeholder="Nome para verificar"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
         value={formData.nome}
-        onChangeText={(text) => handleInputChange('nome', text)}
+        onChangeText={(value) => handleInputChange('nome', value)}
       />
 
-      <Text style={styles.label}>Matrícula:</Text>
       <TextInput
-        style={styles.input}
-        placeholder="Digite sua matrícula"
+        style={[styles.input, isDarkMode && styles.darkInput]}
+        placeholder="Matrícula para verificar"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
         keyboardType="numeric"
         value={formData.matricula}
-        onChangeText={(text) => handleInputChange('matricula', text)}
+        onChangeText={(value) => handleInputChange('matricula', value)}
       />
 
-      <Button
-        title={carregando ? 'Verificando...' : 'Entrar'}
-        onPress={verificarUsuario}
-        disabled={carregando}
-      />
+      <View style={styles.verificacaoBotoes}>
+        <TouchableOpacity 
+          style={[styles.button, styles.verificarButton]} 
+          onPress={verificarUsuario}
+          disabled={carregando}
+        >
+          <Text style={styles.buttonText}>
+            {carregando ? '🔎 Verificando...' : 'Verificar Usuário'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.button, styles.limparButton]} 
+          onPress={limparVerificacao}
+          disabled={carregando}
+        >
+          <Text style={styles.buttonText}>Limpar</Text>
+        </TouchableOpacity>
+      </View>
 
+      {/* Resultado da verificação */}
       {resultado && (
-        <View style={styles.resultado}>
-          <Text>{resultado.mensagem}</Text>
+        <View style={[
+          styles.resultadoContainer,
+          resultado.status === 'ENCONTRADO' && styles.resultadoSucesso,
+          resultado.status === 'NAO_ENCONTRADO' && styles.resultadoErro,
+          resultado.status === 'ERRO' && styles.resultadoAlerta,
+        ]}>
+          <Text style={styles.resultadoMensagem}>{resultado.mensagem}</Text>
+          
+          {resultado.usuario && (
+            <View style={styles.detalhesUsuario}>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>ID:</Text> {resultado.usuario.id}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Nome:</Text> {resultado.usuario.nome}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Matrícula:</Text> {resultado.usuario.matricula}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Cadastrado em:</Text> {' '}
+                {new Date(resultado.usuario.criado_em).toLocaleString('pt-BR')}
+              </Text>
+            </View>
+          )}
         </View>
       )}
     </View>
   );
 }
 
+// Componente Principal Login
+export default function Login() {
+  const navigation = useNavigation();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [nome, setNome] = useState('');
+  const [matricula, setMatricula] = useState('');
+  const [errors, setErrors] = useState({});
+  const [abaAtiva, setAbaAtiva] = useState('login'); // 'login' ou 'verificar'
+
+  const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
+  const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
+
+  const limparCampos = () => {
+    setNome('');
+    setMatricula('');
+    setErrors({});
+  };
+
+  const handleCadastrar = async () => {
+    const novosErros = {};
+
+    if (!validarNome(nome)) novosErros.nome = 'Nome inválido. Use apenas letras e espaços.';
+    if (!validarMatricula(matricula))
+      novosErros.matricula = 'Matrícula inválida. Deve ter pelo menos 6 números.';
+
+    setErrors(novosErros);
+
+    if (Object.keys(novosErros).length === 0) {
+      // Consulta o banco de dados
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('matricula', matricula);
+
+      if (error) {
+        console.log('Erro no banco:', error.message);
+        setErrors({ matricula: 'Erro de conexão' });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Usuário encontrado - vai para Home
+        navigation.navigate('Home');
+      } else {
+        // Usuário não encontrado
+        setErrors({ matricula: 'Matrícula não encontrada' });
+      }
+    }
+  };
+
+  return (
+    <ScrollView style={[styles.container, isDarkMode && styles.darkContainer]}>
+      <View style={styles.switchContainer}>
+        <Text style={[styles.switchLabel, isDarkMode && styles.darkText]}>
+          Modo Escuro
+        </Text>
+        <Switch
+          value={isDarkMode}
+          onValueChange={() => setIsDarkMode((prev) => !prev)}
+          thumbColor={isDarkMode ? '#fff' : '#007AFF'}
+          trackColor={{ false: '#ccc', true: '#444' }}
+        />
+      </View>
+
+      {/* Abas de Navegação */}
+      <View style={styles.abasContainer}>
+        <TouchableOpacity 
+          style={[styles.aba, abaAtiva === 'login' && styles.abaAtiva]}
+          onPress={() => setAbaAtiva('login')}
+        >
+          <Text style={[styles.abaTexto, abaAtiva === 'login' && styles.abaTextoAtiva]}>
+            Login
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.aba, abaAtiva === 'verificar' && styles.abaAtiva]}
+          onPress={() => setAbaAtiva('verificar')}
+        >
+          <Text style={[styles.abaTexto, abaAtiva === 'verificar' && styles.abaTextoAtiva]}>
+            Verificar
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {abaAtiva === 'login' ? (
+        <View style={styles.loginContainer}>
+          <Text style={[styles.title, isDarkMode && styles.darkText]}>Cadastro</Text>
+
+          <TextInput
+            style={[styles.input, isDarkMode && styles.darkInput]}
+            placeholder="Nome"
+            placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+            value={nome}
+            onChangeText={setNome}
+          />
+          {errors.nome && <Text style={styles.error}>{errors.nome}</Text>}
+
+          <TextInput
+            style={[styles.input, isDarkMode && styles.darkInput]}
+            placeholder="Matrícula"
+            placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+            keyboardType="numeric"
+            value={matricula}
+            onChangeText={setMatricula}
+          />
+          {errors.matricula && <Text style={styles.error}>{errors.matricula}</Text>}
+
+          <TouchableOpacity style={styles.button} onPress={handleCadastrar}>
+            <Text style={styles.buttonText}>Entrar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={limparCampos}>
+            <Text style={styles.buttonText}>Limpar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <VerificarUsuario isDarkMode={isDarkMode} />
+      )}
+    </ScrollView>
+  );
+}
+
+// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#fff',
+    padding: 24,
+  },
+  darkContainer: {
+    backgroundColor: '#121212',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginBottom: 20,
+    gap: 8,
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: '#000',
+  },
+  abasContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 4,
+  },
+  aba: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  abaAtiva: {
+    backgroundColor: '#007AFF',
+  },
+  abaTexto: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+  },
+  abaTextoAtiva: {
+    color: '#fff',
+  },
+  loginContainer: {
     justifyContent: 'center',
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
+  title: {
+    fontSize: 28,
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#000',
+  },
+  darkText: {
+    color: '#fff',
   },
   input: {
+    height: 50,
+    borderColor: '#999',
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 10,
-    marginBottom: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    paddingHorizontal: 10,
+    backgroundColor: '#f5f5f5',
   },
-  resultado: {
-    marginTop: 20,
-    padding: 10,
+  darkInput: {
+    backgroundColor: '#1e1e1e',
+    borderColor: '#444',
+    color: '#fff',
+  },
+  error: {
+    color: '#ff4d4d',
+    marginBottom: 8,
+    marginLeft: 4,
+    fontSize: 12,
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  // Estilos para o componente de verificação
+  verificacaoContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  darkVerificacaoContainer: {
+    backgroundColor: '#1e1e1e',
+  },
+  verificacaoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: '#000',
+  },
+  verificacaoBotoes: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  verificarButton: {
+    flex: 2,
+    backgroundColor: '#28a745',
+  },
+  limparButton: {
+    flex: 1,
+    backgroundColor: '#6c757d',
+  },
+  resultadoContainer: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ccc',
+  },
+  resultadoSucesso: {
+    backgroundColor: '#d4edda',
+    borderColor: '#c3e6cb',
+  },
+  resultadoErro: {
+    backgroundColor: '#f8d7da',
+    borderColor: '#f5c6cb',
+  },
+  resultadoAlerta: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeaa7',
+  },
+  resultadoMensagem: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  detalhesUsuario: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.5)',
     borderRadius: 4,
-    backgroundColor: '#f9f9f9',
+  },
+  detalhesTexto: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  detalhesLabel: {
+    fontWeight: 'bold',
   },
 });
