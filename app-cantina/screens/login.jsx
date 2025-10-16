@@ -12,6 +12,28 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
+// Dados mock para desenvolvimento
+const mockUsuarios = [
+  {
+    id: '1',
+    nome: 'Victor Hugo',
+    matricula: '2023001',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '2', 
+    nome: 'Kauan',
+    matricula: '2023002',
+    created_at: new Date().toISOString()
+  },
+  {
+  id: '3', 
+  nome: 'Wesley',
+  matricula: '2023003',
+  created_at: new Date().toISOString()
+},
+];
+
 // Componente de Verificação de Usuário
 function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
@@ -20,6 +42,7 @@ function VerificarUsuario({ isDarkMode }) {
   });
   const [resultado, setResultado] = useState(null);
   const [carregando, setCarregando] = useState(false);
+  const [modoOffline, setModoOffline] = useState(false);
 
   const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
   const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
@@ -29,6 +52,80 @@ function VerificarUsuario({ isDarkMode }) {
       ...prev,
       [name]: value
     }));
+  };
+
+  // FUNÇÃO DE TESTE DA CONEXÃO
+  const testarConexao = async () => {
+    console.log('🔍 Testando conexão com Supabase...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .limit(1);
+
+      if (error) {
+        console.log('❌ Erro na conexão:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+        Alert.alert('Erro Conexão', 
+          `Code: ${error.code}\nMessage: ${error.message}`
+        );
+      } else {
+        console.log('✅ Conexão OK! Dados:', data);
+        Alert.alert('Conexão OK', `Encontrados ${data?.length || 0} usuários`);
+      }
+    } catch (err) {
+      console.log('💥 Erro geral:', err);
+      Alert.alert('Erro', err.message);
+    }
+  };
+
+  // 🆕 FUNÇÃO DE TESTE DE CONECTIVIDADE DE REDE
+  const testarConectividadeRede = async () => {
+    console.log('🌐 Testando conectividade de rede...');
+    
+    const testes = [
+      'https://google.com',
+      'https://github.com', 
+      'https://aokmqmjavidwfxceehvs.supabase.co',
+      'https://aokmqmjavidwfxceehvs.supabase.co/rest/v1/'
+    ];
+
+    let resultados = '📡 Resultados dos Testes de Rede:\n\n';
+
+    for (const url of testes) {
+      try {
+        const start = Date.now();
+        const response = await fetch(url, { method: 'HEAD' });
+        const tempo = Date.now() - start;
+        
+        console.log(`✅ ${url} - Status: ${response.status} (${tempo}ms)`);
+        resultados += `✅ ${url}\nStatus: ${response.status} (${tempo}ms)\n\n`;
+      } catch (error) {
+        console.log(`❌ ${url} - Erro: ${error.message}`);
+        resultados += `❌ ${url}\nErro: ${error.message}\n\n`;
+      }
+    }
+
+    Alert.alert('Teste de Rede', resultados);
+  };
+
+  // 🆕 FUNÇÃO MOCK PARA MODO OFFLINE
+  const verificarUsuarioMock = async (formData) => {
+    console.log('🔧 Usando dados mock (modo offline)');
+    
+    // Simula delay de rede
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const usuario = mockUsuarios.find(u => 
+      u.matricula === formData.matricula && 
+      u.nome.toLowerCase().includes(formData.nome.toLowerCase())
+    );
+    
+    return usuario ? { data: [usuario], error: null } : { data: [], error: null };
   };
 
   async function verificarUsuario() {
@@ -46,18 +143,42 @@ function VerificarUsuario({ isDarkMode }) {
     setResultado(null);
 
     try {
-      // CONSULTA NO BANCO DE DADOS
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('matricula', formData.matricula)
-        .ilike('nome', `%${formData.nome.trim()}%`);
+      console.log('🟡 Iniciando consulta...', formData);
+      console.log('🔧 Modo:', modoOffline ? 'OFFLINE' : 'ONLINE');
+
+      let data, error;
+
+      if (modoOffline) {
+        // Usa dados mock
+        const result = await verificarUsuarioMock(formData);
+        data = result.data;
+        error = result.error;
+      } else {
+        // Consulta real no Supabase
+        const result = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('matricula', formData.matricula);
+        data = result.data;
+        error = result.error;
+      }
+
+      console.log('🟢 Resposta completa:', { 
+        data: data, 
+        error: error 
+      });
 
       if (error) {
-        console.error('Erro na consulta:', error);
+        console.log('🔴 Detalhes do erro:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
         setResultado({
           status: 'ERRO',
-          mensagem: `Erro na consulta: ${error.message}`,
+          mensagem: `Erro: ${error.code || 'ERRO'} - ${error.message}`,
           usuario: null
         });
         return;
@@ -65,9 +186,11 @@ function VerificarUsuario({ isDarkMode }) {
 
       if (data && data.length > 0) {
         const usuarioEncontrado = data[0];
+        console.log('✅ Usuário encontrado:', usuarioEncontrado);
+        
         setResultado({
           status: 'ENCONTRADO',
-          mensagem: '✅ Usuário encontrado com sucesso!',
+          mensagem: `✅ Usuário encontrado com sucesso! ${modoOffline ? '(Modo Offline)' : ''}`,
           usuario: {
             id: usuarioEncontrado.id,
             nome: usuarioEncontrado.nome,
@@ -77,18 +200,19 @@ function VerificarUsuario({ isDarkMode }) {
           }
         });
       } else {
+        console.log('🔵 Nenhum usuário encontrado');
         setResultado({
           status: 'NAO_ENCONTRADO',
-          mensagem: '❌ Usuário não encontrado!',
+          mensagem: `❌ Usuário não encontrado! ${modoOffline ? '(Modo Offline)' : ''}`,
           usuario: null
         });
       }
 
     } catch (err) {
-      console.error('Erro inesperado:', err);
+      console.error('💥 Erro inesperado:', err);
       setResultado({
         status: 'ERRO',
-        mensagem: 'Erro interno do sistema',
+        mensagem: `Erro interno: ${err.message}`,
         usuario: null
       });
     } finally {
@@ -106,6 +230,21 @@ function VerificarUsuario({ isDarkMode }) {
       <Text style={[styles.verificacaoTitle, isDarkMode && styles.darkText]}>
         🔍 Verificar Usuário
       </Text>
+
+      {/* 🆕 INDICADOR DE MODO */}
+      <View style={styles.modoContainer}>
+        <Text style={[styles.modoTexto, isDarkMode && styles.darkText]}>
+          Modo: {modoOffline ? '🔧 Offline (Mock)' : '🌐 Online (Supabase)'}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.button, {backgroundColor: modoOffline ? '#ffa500' : '#007AFF', padding: 8}]}
+          onPress={() => setModoOffline(!modoOffline)}
+        >
+          <Text style={[styles.buttonText, {fontSize: 12}]}>
+            {modoOffline ? '🔄 Tentar Conexão Real' : '🔧 Usar Dados Mock'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <TextInput
         style={[styles.input, isDarkMode && styles.darkInput]}
@@ -143,6 +282,21 @@ function VerificarUsuario({ isDarkMode }) {
           <Text style={styles.buttonText}>Limpar</Text>
         </TouchableOpacity>
       </View>
+
+      {/* BOTÕES DE TESTE */}
+      <TouchableOpacity 
+        style={[styles.button, {backgroundColor: 'orange', marginTop: 10}]} 
+        onPress={testarConexao}
+      >
+        <Text style={styles.buttonText}>Testar Conexão Supabase</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.button, {backgroundColor: 'purple', marginTop: 10}]} 
+        onPress={testarConectividadeRede}
+      >
+        <Text style={styles.buttonText}>Testar Conectividade de Rede</Text>
+      </TouchableOpacity>
 
       {/* Resultado da verificação */}
       {resultado && (
@@ -205,24 +359,35 @@ export default function Login() {
     setErrors(novosErros);
 
     if (Object.keys(novosErros).length === 0) {
-      // Consulta o banco de dados
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('matricula', matricula);
+      try {
+        console.log('🟡 Fazendo login...', { matricula });
+        
+        // Consulta o banco de dados
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('matricula', matricula);
 
-      if (error) {
-        console.log('Erro no banco:', error.message);
+        console.log('🟢 Resposta login:', { data, error });
+
+        if (error) {
+          console.log('🔴 Erro login:', error);
+          setErrors({ matricula: `Erro: ${error.message}` });
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Usuário encontrado - vai para Home
+          console.log('✅ Login bem-sucedido!');
+          navigation.navigate('Home');
+        } else {
+          // Usuário não encontrado
+          console.log('🔵 Usuário não encontrado');
+          setErrors({ matricula: 'Matrícula não encontrada' });
+        }
+      } catch (error) {
+        console.log('💥 Erro geral login:', error);
         setErrors({ matricula: 'Erro de conexão' });
-        return;
-      }
-
-      if (data && data.length > 0) {
-        // Usuário encontrado - vai para Home
-        navigation.navigate('Home');
-      } else {
-        // Usuário não encontrado
-        setErrors({ matricula: 'Matrícula não encontrada' });
       }
     }
   };
@@ -386,7 +551,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
-  // Estilos para o componente de verificação
   verificacaoContainer: {
     backgroundColor: '#f8f9fa',
     padding: 16,
@@ -451,5 +615,20 @@ const styles = StyleSheet.create({
   },
   detalhesLabel: {
     fontWeight: 'bold',
+  },
+  // 🆕 ESTILOS PARA O MODO
+  modoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    padding: 10,
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+  },
+  modoTexto: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
