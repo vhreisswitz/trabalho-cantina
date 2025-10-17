@@ -359,7 +359,7 @@ export default function Login() {
 
         if (data && data.length > 0) {
           console.log('Login bem-sucedido!');
-          navigation.navigate('Home');
+          navigation.navigate('Home', { usuario: data[0] });
         } else {
           console.log('Usuário não encontrado');
           setErrors({ geral: 'Nome ou matrícula incorretos. Verifique os dados.' });

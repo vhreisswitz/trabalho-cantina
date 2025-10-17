@@ -2,20 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { supabase } from '../services/database';
 
-export default function Home() {
+export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
-  const [usuario, setUsuario] = useState(null);
   const [saldo, setSaldo] = useState(0);
+  const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
+    if (route.params?.usuario) {
+      console.log('Usuário recebido:', route.params.usuario);
+      setUsuario(route.params.usuario);
+      setSaldo(route.params.usuario.saldo || 0);
+    } else {
+      console.log('Nenhum usuário recebido nos parâmetros');
+      Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
+      navigation.navigate('Login');
+    }
     carregarProdutos();
-    carregarUsuario();
-  }, []);
+  }, [route.params]);
 
   async function carregarProdutos() {
     try {
       const { data, error } = await supabase
-        .from('produtos')
+        .from('cantina_produtos')
         .select('*');
       
       if (error) {
@@ -28,27 +36,12 @@ export default function Home() {
     }
   }
 
-  async function carregarUsuario() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUsuario(user);
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('saldo')
-          .eq('id', user.id)
-          .single();
-        
-        if (data) {
-          setSaldo(data.saldo);
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao carregar usuário:', error);
-    }
-  }
-
   async function comprarProduto(produto) {
+    if (!usuario) {
+      Alert.alert('Erro', 'Usuário não identificado.');
+      return;
+    }
+
     if (saldo < produto.preco) {
       Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
       return;
@@ -68,17 +61,17 @@ export default function Home() {
       }
 
       const { error: erroTransacao } = await supabase
-        .from('transacoes')
+        .from('cantina_transacoes')
         .insert({
           usuario_id: usuario.id,
           produto_id: produto.id,
           tipo: 'compra',
           valor: produto.preco,
-          descricao: `Compra: ${produto.desc}`
+          descricao: `Compra: ${produto.nome}`
         });
 
       setSaldo(novoSaldo);
-      Alert.alert('Sucesso', `Compra realizada: ${produto.desc}`);
+      Alert.alert('Sucesso', `Compra realizada: ${produto.nome}`);
       
     } catch (error) {
       console.error('Erro na compra:', error);
@@ -87,6 +80,11 @@ export default function Home() {
   }
 
   async function recarregarSaldo() {
+    if (!usuario) {
+      Alert.alert('Erro', 'Usuário não identificado.');
+      return;
+    }
+
     try {
       const novoSaldo = saldo + 10.00;
       
@@ -101,7 +99,7 @@ export default function Home() {
       }
 
       const { error: erroTransacao } = await supabase
-        .from('transacoes')
+        .from('cantina_transacoes')
         .insert({
           usuario_id: usuario.id,
           tipo: 'recarga',
@@ -142,8 +140,8 @@ export default function Home() {
             onPress={() => comprarProduto(item)}
           >
             <View style={styles.produtoInfo}>
-              <Text style={styles.codigo}>{item.cod}</Text>
-              <Text style={styles.descricao}>{item.desc}</Text>
+              <Text style={styles.codigo}>{item.codigo}</Text>
+              <Text style={styles.descricao}>{item.nome}</Text>
               <Text style={styles.preco}>R$ {item.preco}</Text>
             </View>
             <TouchableOpacity 
