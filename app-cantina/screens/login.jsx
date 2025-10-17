@@ -12,7 +12,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
-// Dados mock para desenvolvimento
 const mockUsuarios = [
   {
     id: '1',
@@ -27,14 +26,13 @@ const mockUsuarios = [
     created_at: new Date().toISOString()
   },
   {
-  id: '3', 
-  nome: 'Wesley',
-  matricula: '2023003',
-  created_at: new Date().toISOString()
-},
+    id: '3', 
+    nome: 'Wesley',
+    matricula: '2023003',
+    created_at: new Date().toISOString()
+  },
 ];
 
-// Componente de Verificação de Usuário
 function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
     nome: '',
@@ -54,9 +52,8 @@ function VerificarUsuario({ isDarkMode }) {
     }));
   };
 
-  // FUNÇÃO DE TESTE DA CONEXÃO
   const testarConexao = async () => {
-    console.log('🔍 Testando conexão com Supabase...');
+    console.log('Testando conexão com Supabase...');
     
     try {
       const { data, error } = await supabase
@@ -65,7 +62,7 @@ function VerificarUsuario({ isDarkMode }) {
         .limit(1);
 
       if (error) {
-        console.log('❌ Erro na conexão:', {
+        console.log('Erro na conexão:', {
           message: error.message,
           code: error.code,
           details: error.details
@@ -74,27 +71,26 @@ function VerificarUsuario({ isDarkMode }) {
           `Code: ${error.code}\nMessage: ${error.message}`
         );
       } else {
-        console.log('✅ Conexão OK! Dados:', data);
+        console.log('Conexão OK! Dados:', data);
         Alert.alert('Conexão OK', `Encontrados ${data?.length || 0} usuários`);
       }
     } catch (err) {
-      console.log('💥 Erro geral:', err);
+      console.log('Erro geral:', err);
       Alert.alert('Erro', err.message);
     }
   };
 
-  // 🆕 FUNÇÃO DE TESTE DE CONECTIVIDADE DE REDE
   const testarConectividadeRede = async () => {
-    console.log('🌐 Testando conectividade de rede...');
+    console.log('Testando conectividade de rede...');
     
     const testes = [
       'https://google.com',
       'https://github.com', 
-      'https://aokmqmjavidwfxceehvs.supabase.co',
-      'https://aokmqmjavidwfxceehvs.supabase.co/rest/v1/'
+      'https://aoknqmjavdiwfxceehvs.supabase.co',
+      'https://aoknqmjavdiwfxceehvs.supabase.co/rest/v1/'
     ];
 
-    let resultados = '📡 Resultados dos Testes de Rede:\n\n';
+    let resultados = 'Resultados dos Testes de Rede:\n\n';
 
     for (const url of testes) {
       try {
@@ -102,10 +98,10 @@ function VerificarUsuario({ isDarkMode }) {
         const response = await fetch(url, { method: 'HEAD' });
         const tempo = Date.now() - start;
         
-        console.log(`✅ ${url} - Status: ${response.status} (${tempo}ms)`);
+        console.log(`${url} - Status: ${response.status} (${tempo}ms)`);
         resultados += `✅ ${url}\nStatus: ${response.status} (${tempo}ms)\n\n`;
       } catch (error) {
-        console.log(`❌ ${url} - Erro: ${error.message}`);
+        console.log(`${url} - Erro: ${error.message}`);
         resultados += `❌ ${url}\nErro: ${error.message}\n\n`;
       }
     }
@@ -113,11 +109,9 @@ function VerificarUsuario({ isDarkMode }) {
     Alert.alert('Teste de Rede', resultados);
   };
 
-  // 🆕 FUNÇÃO MOCK PARA MODO OFFLINE
   const verificarUsuarioMock = async (formData) => {
-    console.log('🔧 Usando dados mock (modo offline)');
+    console.log('Usando dados mock (modo offline)');
     
-    // Simula delay de rede
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const usuario = mockUsuarios.find(u => 
@@ -143,38 +137,29 @@ function VerificarUsuario({ isDarkMode }) {
     setResultado(null);
 
     try {
-      console.log('🟡 Iniciando consulta...', formData);
-      console.log('🔧 Modo:', modoOffline ? 'OFFLINE' : 'ONLINE');
+      console.log('Iniciando consulta...', formData);
+      console.log('Modo:', modoOffline ? 'OFFLINE' : 'ONLINE');
 
       let data, error;
 
       if (modoOffline) {
-        // Usa dados mock
         const result = await verificarUsuarioMock(formData);
         data = result.data;
         error = result.error;
       } else {
-        // Consulta real no Supabase
         const result = await supabase
           .from('usuarios')
           .select('*')
-          .eq('matricula', formData.matricula);
+          .eq('matricula', formData.matricula)
+          .ilike('nome', `%${formData.nome}%`);
         data = result.data;
         error = result.error;
       }
 
-      console.log('🟢 Resposta completa:', { 
-        data: data, 
-        error: error 
-      });
+      console.log('Resposta completa:', { data, error });
 
       if (error) {
-        console.log('🔴 Detalhes do erro:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
+        console.log('Detalhes do erro:', error);
         
         setResultado({
           status: 'ERRO',
@@ -186,7 +171,7 @@ function VerificarUsuario({ isDarkMode }) {
 
       if (data && data.length > 0) {
         const usuarioEncontrado = data[0];
-        console.log('✅ Usuário encontrado:', usuarioEncontrado);
+        console.log('Usuário encontrado:', usuarioEncontrado);
         
         setResultado({
           status: 'ENCONTRADO',
@@ -200,7 +185,7 @@ function VerificarUsuario({ isDarkMode }) {
           }
         });
       } else {
-        console.log('🔵 Nenhum usuário encontrado');
+        console.log('Nenhum usuário encontrado');
         setResultado({
           status: 'NAO_ENCONTRADO',
           mensagem: `❌ Usuário não encontrado! ${modoOffline ? '(Modo Offline)' : ''}`,
@@ -209,7 +194,7 @@ function VerificarUsuario({ isDarkMode }) {
       }
 
     } catch (err) {
-      console.error('💥 Erro inesperado:', err);
+      console.error('Erro inesperado:', err);
       setResultado({
         status: 'ERRO',
         mensagem: `Erro interno: ${err.message}`,
@@ -231,7 +216,6 @@ function VerificarUsuario({ isDarkMode }) {
         🔍 Verificar Usuário
       </Text>
 
-      {/* 🆕 INDICADOR DE MODO */}
       <View style={styles.modoContainer}>
         <Text style={[styles.modoTexto, isDarkMode && styles.darkText]}>
           Modo: {modoOffline ? '🔧 Offline (Mock)' : '🌐 Online (Supabase)'}
@@ -283,7 +267,6 @@ function VerificarUsuario({ isDarkMode }) {
         </TouchableOpacity>
       </View>
 
-      {/* BOTÕES DE TESTE */}
       <TouchableOpacity 
         style={[styles.button, {backgroundColor: 'orange', marginTop: 10}]} 
         onPress={testarConexao}
@@ -298,7 +281,6 @@ function VerificarUsuario({ isDarkMode }) {
         <Text style={styles.buttonText}>Testar Conectividade de Rede</Text>
       </TouchableOpacity>
 
-      {/* Resultado da verificação */}
       {resultado && (
         <View style={[
           styles.resultadoContainer,
@@ -331,14 +313,13 @@ function VerificarUsuario({ isDarkMode }) {
   );
 }
 
-// Componente Principal Login
 export default function Login() {
   const navigation = useNavigation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [errors, setErrors] = useState({});
-  const [abaAtiva, setAbaAtiva] = useState('login'); // 'login' ou 'verificar'
+  const [abaAtiva, setAbaAtiva] = useState('login');
 
   const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
   const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
@@ -360,34 +341,32 @@ export default function Login() {
 
     if (Object.keys(novosErros).length === 0) {
       try {
-        console.log('🟡 Fazendo login...', { matricula });
+        console.log('Fazendo login...', { nome, matricula });
         
-        // Consulta o banco de dados
         const { data, error } = await supabase
           .from('usuarios')
           .select('*')
-          .eq('matricula', matricula);
+          .eq('matricula', matricula)
+          .ilike('nome', `%${nome}%`);
 
-        console.log('🟢 Resposta login:', { data, error });
+        console.log('Resposta login:', { data, error });
 
         if (error) {
-          console.log('🔴 Erro login:', error);
-          setErrors({ matricula: `Erro: ${error.message}` });
+          console.log('Erro login:', error);
+          setErrors({ geral: `Erro: ${error.message}` });
           return;
         }
 
         if (data && data.length > 0) {
-          // Usuário encontrado - vai para Home
-          console.log('✅ Login bem-sucedido!');
+          console.log('Login bem-sucedido!');
           navigation.navigate('Home');
         } else {
-          // Usuário não encontrado
-          console.log('🔵 Usuário não encontrado');
-          setErrors({ matricula: 'Matrícula não encontrada' });
+          console.log('Usuário não encontrado');
+          setErrors({ geral: 'Nome ou matrícula incorretos. Verifique os dados.' });
         }
       } catch (error) {
-        console.log('💥 Erro geral login:', error);
-        setErrors({ matricula: 'Erro de conexão' });
+        console.log('Erro geral login:', error);
+        setErrors({ geral: 'Erro de conexão' });
       }
     }
   };
@@ -406,7 +385,6 @@ export default function Login() {
         />
       </View>
 
-      {/* Abas de Navegação */}
       <View style={styles.abasContainer}>
         <TouchableOpacity 
           style={[styles.aba, abaAtiva === 'login' && styles.abaAtiva]}
@@ -449,6 +427,8 @@ export default function Login() {
           />
           {errors.matricula && <Text style={styles.error}>{errors.matricula}</Text>}
 
+          {errors.geral && <Text style={styles.error}>{errors.geral}</Text>}
+
           <TouchableOpacity style={styles.button} onPress={handleCadastrar}>
             <Text style={styles.buttonText}>Entrar</Text>
           </TouchableOpacity>
@@ -463,7 +443,6 @@ export default function Login() {
   );
 }
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -616,7 +595,6 @@ const styles = StyleSheet.create({
   detalhesLabel: {
     fontWeight: 'bold',
   },
-  // 🆕 ESTILOS PARA O MODO
   modoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
