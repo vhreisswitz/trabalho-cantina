@@ -8,11 +8,12 @@ import {
   Switch,
   ScrollView,
   Alert,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { supabase } from '../services/database';
-
-const mockUsuarios = [
+  } from 'react-native';
+  import { useNavigation } from '@react-navigation/native';
+  import { supabase } from '../services/database';
+  
+  /*
+  const mockUsuarios = [
   {
     id: '1',
     nome: 'Victor Hugo',
@@ -312,6 +313,7 @@ function VerificarUsuario({ isDarkMode }) {
     </View>
   );
 }
+*/
 
 export default function Login() {
   const navigation = useNavigation();
@@ -395,14 +397,16 @@ export default function Login() {
             Login
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+
+        {/* <TouchableOpacity 
           style={[styles.aba, abaAtiva === 'verificar' && styles.abaAtiva]}
           onPress={() => setAbaAtiva('verificar')}
         >
           <Text style={[styles.abaTexto, abaAtiva === 'verificar' && styles.abaTextoAtiva]}>
             Verificar
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        
       </View>
 
         {abaAtiva === 'login' ? (
