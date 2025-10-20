@@ -42,6 +42,11 @@ export default function Home({ route, navigation }) {
       return;
     }
 
+    if (produto.codigo === 'P011') {
+      await recarregarSaldoBruno();
+      return;
+    }
+
     if (saldo < produto.preco) {
       Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
       return;
@@ -115,6 +120,44 @@ export default function Home({ route, navigation }) {
       Alert.alert('Erro', 'Não foi possível recarregar o saldo.');
     }
   }
+
+async function recarregarSaldoBruno() {
+  if (!usuario) {
+    Alert.alert('Erro', 'Usuário não identificado.');
+    return;
+  }
+
+  try {
+    const valorRecarga = 100.00;
+    const novoSaldo = saldo + valorRecarga;
+    
+    const { error } = await supabase
+      .from('usuarios')
+      .update({ saldo: novoSaldo })
+      .eq('id', usuario.id);
+
+    if (error) {
+      Alert.alert('Erro', 'Não foi possível recarregar o saldo.');
+      return;
+    }
+
+    const { error: erroTransacao } = await supabase
+      .from('cantina_transacoes')
+      .insert({
+        usuario_id: usuario.id,
+        tipo: 'recarga',
+        valor: valorRecarga,
+        descricao: 'Recarga - Cartão do Bruno'
+      });
+
+    setSaldo(novoSaldo);
+    Alert.alert('Sucesso!', `Cartão do Bruno ativado! R$ 100,00 adicionados ao seu saldo.`);
+    
+  } catch (error) {
+    console.error('Erro na recarga do Bruno:', error);
+    Alert.alert('Erro', 'Não foi possível recarregar o saldo.');
+  }
+}
 
   return (
     <View style={styles.container}>
