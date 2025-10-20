@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { supabase } from './services/database.jsx'; // ajuste o caminho conforme sua estrutura
-
-export function VerificarUsuario() {
+// Componente de Verificação de Usuário CORRIGIDO
+function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
     nome: '',
     matricula: ''
@@ -9,19 +7,20 @@ export function VerificarUsuario() {
   const [resultado, setResultado] = useState(null);
   const [carregando, setCarregando] = useState(false);
 
-  // Função para lidar com mudanças nos inputs
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
+  const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
+
+  const handleInputChange = (name, value) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  // Função que executa a verificação no Supabase
+  // 🔥 VERIFICAÇÃO MELHORADA
   async function verificarUsuario() {
-    if (!formData.nome || !formData.matricula) {
-      alert('Por favor, preencha nome e matrícula!');
+    if (!formData.nome && !formData.matricula) {
+      Alert.alert('Erro', 'Por favor, preencha pelo menos um campo!');
       return;
     }
 
@@ -29,218 +28,134 @@ export function VerificarUsuario() {
     setResultado(null);
 
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('*')
-        .eq('nome', formData.nome)
-        .eq('matricula', formData.matricula);
-
-      if (error) {
-        console.error('Erro ao buscar usuário:', error);
-        setResultado({
-          status: 'ERRO',
-          mensagem: 'Erro ao consultar o banco de dados',
-          usuario: null
-        });
-        return;
+      let query = supabase.from('usuarios').select('*');
+      
+      // Busca flexível - por nome OU matrícula
+      if (formData.nome.trim()) {
+        query = query.ilike('nome', `%${formData.nome.trim()}%`); // Busca parcial
+      }
+      
+      if (formData.matricula) {
+        query = query.eq('matricula', formData.matricula); // Busca exata
       }
 
-      if (data && data.length > 0) {
+      const { data: usuarios, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      if (usuarios && usuarios.length > 0) {
+        // 🎉 USUÁRIO(S) ENCONTRADO(S)
         setResultado({
           status: 'ENCONTRADO',
-          mensagem: '✅ Usuário encontrado com sucesso!',
-          usuario: data[0]
+          mensagem: `✅ ${usuarios.length} usuário(s) encontrado(s)!`,
+          usuarios: usuarios
         });
       } else {
         setResultado({
           status: 'NAO_ENCONTRADO',
-          mensagem: '❌ Usuário não encontrado!',
-          usuario: null
+          mensagem: '❌ Nenhum usuário encontrado com os dados fornecidos.',
+          usuarios: null
         });
       }
+
     } catch (err) {
-      console.error('Erro inesperado:', err);
+      console.error('Erro na consulta:', err);
       setResultado({
         status: 'ERRO',
-        mensagem: 'Erro interno do sistema',
-        usuario: null
+        mensagem: 'Erro ao consultar o banco de dados',
+        usuarios: null
       });
     } finally {
       setCarregando(false);
     }
   }
 
-  // Função para limpar o formulário
-  const limparFormulario = () => {
+  const limparVerificacao = () => {
     setFormData({ nome: '', matricula: '' });
     setResultado(null);
   };
 
   return (
-    <div style={styles.container}>
-      <h3 style={styles.titulo}>🔍 Verificar Usuário</h3>
-      
-      <div style={styles.formGroup}>
-        <label style={styles.label}>
-          Nome:
-          <input
-            type="text"
-            name="nome"
-            placeholder="Digite o nome"
-            value={formData.nome}
-            onChange={handleInputChange}
-            style={styles.input}
-            disabled={carregando}
-          />
-        </label>
-      </div>
+    <View style={[styles.verificacaoContainer, isDarkMode && styles.darkVerificacaoContainer]}>
+      <Text style={[styles.verificacaoTitle, isDarkMode && styles.darkText]}>
+        🔍 Verificar Usuário
+      </Text>
 
-      <div style={styles.formGroup}>
-        <label style={styles.label}>
-          Matrícula:
-          <input
-            type="text"
-            name="matricula"
-            placeholder="Digite a matrícula"
-            value={formData.matricula}
-            onChange={handleInputChange}
-            style={styles.input}
-            disabled={carregando}
-          />
-        </label>
-      </div>
+      <Text style={[styles.instrucoes, isDarkMode && styles.darkText]}>
+        Preencha pelo menos um campo para buscar
+      </Text>
 
-      <div style={styles.botoes}>
-        <button 
-          onClick={verificarUsuario} 
-          style={styles.botaoVerificar}
-          disabled={carregando}
+      <TextInput
+        style={[styles.input, isDarkMode && styles.darkInput]}
+        placeholder="Nome (busca parcial)"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+        value={formData.nome}
+        onChangeText={(value) => handleInputChange('nome', value)}
+      />
+
+      <TextInput
+        style={[styles.input, isDarkMode && styles.darkInput]}
+        placeholder="Matrícula (busca exata)"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+        keyboardType="numeric"
+        value={formData.matricula}
+        onChangeText={(value) => handleInputChange('matricula', value)}
+      />
+
+      <View style={styles.verificacaoBotoes}>
+        <TouchableOpacity 
+          style={[styles.button, styles.verificarButton, carregando && styles.buttonDisabled]} 
+          onPress={verificarUsuario}
+          disabled={carregando || (!formData.nome && !formData.matricula)}
         >
-          {carregando ? '🔎 Verificando...' : 'Verificar Usuário'}
-        </button>
+          <Text style={styles.buttonText}>
+            {carregando ? '🔎 Buscando...' : '📋 Buscar Usuário'}
+          </Text>
+        </TouchableOpacity>
         
-        <button 
-          onClick={limparFormulario} 
-          style={styles.botaoLimpar}
+        <TouchableOpacity 
+          style={[styles.button, styles.limparButton]} 
+          onPress={limparVerificacao}
           disabled={carregando}
         >
-          Limpar
-        </button>
-      </div>
+          <Text style={styles.buttonText}>🔄 Limpar</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Resultado da consulta */}
       {resultado && (
-        <div style={{
-          ...styles.resultado,
-          ...(resultado.status === 'ENCONTRADO' ? styles.sucesso : 
-              resultado.status === 'NAO_ENCONTRADO' ? styles.erro : 
-              styles.alerta)
-        }}>
-          <h4>{resultado.mensagem}</h4>
+        <View style={[
+          styles.resultadoContainer,
+          resultado.status === 'ENCONTRADO' && styles.resultadoSucesso,
+          resultado.status === 'NAO_ENCONTRADO' && styles.resultadoErro,
+          resultado.status === 'ERRO' && styles.resultadoAlerta,
+        ]}>
+          <Text style={styles.resultadoMensagem}>{resultado.mensagem}</Text>
           
-          {resultado.usuario && (
-            <div style={styles.detalhesUsuario}>
-              <p><strong>ID:</strong> {resultado.usuario.id}</p>
-              <p><strong>Nome:</strong> {resultado.usuario.nome}</p>
-              <p><strong>Matrícula:</strong> {resultado.usuario.matricula}</p>
-              {resultado.usuario.senha && (
-                <p><strong>Senha:</strong> {resultado.usuario.senha}</p>
-              )}
-              {resultado.usuario.criado_em && (
-                <p><strong>Cadastrado em:</strong> {new Date(resultado.usuario.criado_em).toLocaleString('pt-BR')}</p>
-              )}
-            </div>
-          )}
-        </div>
+          {resultado.usuarios && resultado.usuarios.map((usuario, index) => (
+            <View key={usuario.id || index} style={styles.detalhesUsuario}>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>ID:</Text> {usuario.id}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Nome:</Text> {usuario.nome}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Matrícula:</Text> {usuario.matricula}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Email:</Text> {usuario.email || 'Não informado'}
+              </Text>
+              <Text style={styles.detalhesTexto}>
+                <Text style={styles.detalhesLabel}>Cadastrado em:</Text> {' '}
+                {new Date(usuario.criado_em).toLocaleString('pt-BR')}
+              </Text>
+              {index < resultado.usuarios.length - 1 && <View style={styles.separador} />}
+            </View>
+          ))}
+        </View>
       )}
-    </div>
+    </View>
   );
 }
-
-// Estilos para o componente
-const styles = {
-  container: {
-    padding: '20px',
-    maxWidth: '500px',
-    margin: '20px auto',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    backgroundColor: '#f9f9f9'
-  },
-  titulo: {
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: '20px'
-  },
-  formGroup: {
-    marginBottom: '15px'
-  },
-  label: {
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: 'bold',
-    color: '#555'
-  },
-  input: {
-    width: '100%',
-    padding: '8px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    fontSize: '16px',
-    marginTop: '5px'
-  },
-  botoes: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '20px'
-  },
-  botaoVerificar: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-  botaoLimpar: {
-    flex: 1,
-    padding: '10px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-  resultado: {
-    marginTop: '20px',
-    padding: '15px',
-    borderRadius: '4px',
-    border: '1px solid'
-  },
-  sucesso: {
-    backgroundColor: '#d4edda',
-    borderColor: '#c3e6cb',
-    color: '#155724'
-  },
-  erro: {
-    backgroundColor: '#f8d7da',
-    borderColor: '#f5c6cb',
-    color: '#721c24'
-  },
-  alerta: {
-    backgroundColor: '#fff3cd',
-    borderColor: '#ffeaa7',
-    color: '#856404'
-  },
-  detalhesUsuario: {
-    marginTop: '10px',
-    padding: '10px',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderRadius: '4px'
-  }
-};
-
-export default VerificarUsuario;
