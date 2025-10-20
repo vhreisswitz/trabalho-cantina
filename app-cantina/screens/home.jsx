@@ -1,162 +1,137 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { supabase } from '../services/database';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
   const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     if (route.params?.usuario) {
-      console.log('Usuário recebido:', route.params.usuario);
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
     } else {
-      console.log('Nenhum usuário recebido nos parâmetros');
       Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
       navigation.navigate('Login');
+      return;
     }
     carregarProdutos();
   }, [route.params]);
 
   async function carregarProdutos() {
     try {
-      const { data, error } = await supabase
-        .from('cantina_produtos')
-        .select('*');
-      
-      if (error) {
-        console.error('Erro ao carregar produtos:', error);
-      } else {
-        setProdutos(data);
-      }
+      const { data, error } = await supabase.from('cantina_produtos').select('*');
+      if (error) throw error;
+      setProdutos(data);
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('Erro ao carregar produtos:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os produtos.');
+    } finally {
+      setCarregando(false);
     }
   }
 
   async function comprarProduto(produto) {
-    if (!usuario) {
-      Alert.alert('Erro', 'Usuário não identificado.');
-      return;
-    }
-
-    if (saldo < produto.preco) {
-      Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
-      return;
-    }
+    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
+    if (saldo < produto.preco)
+      return Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
 
     try {
       const novoSaldo = saldo - produto.preco;
-      
+
       const { error } = await supabase
         .from('usuarios')
         .update({ saldo: novoSaldo })
         .eq('id', usuario.id);
 
-      if (error) {
-        Alert.alert('Erro', 'Não foi possível realizar a compra.');
-        return;
-      }
+      if (error) throw error;
 
-      const { error: erroTransacao } = await supabase
-        .from('cantina_transacoes')
-        .insert({
-          usuario_id: usuario.id,
-          produto_id: produto.id,
-          tipo: 'compra',
-          valor: produto.preco,
-          descricao: `Compra: ${produto.nome}`
-        });
+      await supabase.from('cantina_transacoes').insert({
+        usuario_id: usuario.id,
+        produto_id: produto.id,
+        tipo: 'compra',
+        valor: produto.preco,
+        descricao: `Compra: ${produto.nome}`,
+      });
 
       setSaldo(novoSaldo);
-      Alert.alert('Sucesso', `Compra realizada: ${produto.nome}`);
-      
+      Alert.alert('✅ Sucesso', `Você comprou: ${produto.nome}`);
     } catch (error) {
       console.error('Erro na compra:', error);
       Alert.alert('Erro', 'Não foi possível realizar a compra.');
     }
   }
 
-  async function recarregarSaldo() {
-    if (!usuario) {
-      Alert.alert('Erro', 'Usuário não identificado.');
-      return;
-    }
-
-    try {
-      const novoSaldo = saldo + 10.00;
-      
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ saldo: novoSaldo })
-        .eq('id', usuario.id);
-
-      if (error) {
-        Alert.alert('Erro', 'Não foi possível recarregar o saldo.');
-        return;
-      }
-
-      const { error: erroTransacao } = await supabase
-        .from('cantina_transacoes')
-        .insert({
-          usuario_id: usuario.id,
-          tipo: 'recarga',
-          valor: 10.00,
-          descricao: 'Recarga de saldo'
-        });
-
-      setSaldo(novoSaldo);
-      Alert.alert('Sucesso', 'Saldo recarregado com sucesso!');
-      
-    } catch (error) {
-      console.error('Erro na recarga:', error);
-      Alert.alert('Erro', 'Não foi possível recarregar o saldo.');
-    }
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Cantina SENAI</Text>
-        <View style={styles.saldoContainer}>
-          <Text style={styles.saldoLabel}>Saldo:</Text>
+        <View>
+          <Text style={styles.title}>🍔 Cantina SENAI</Text>
+          <Text style={styles.subtitle}>
+            Seja bem-vindo{usuario ? `, ${usuario.nome}` : ''}!
+          </Text>
+        </View>
+
+        <View style={styles.saldoBox}>
+          <Text style={styles.saldoLabel}>Saldo atual</Text>
           <Text style={styles.saldoValor}>R$ {saldo.toFixed(2)}</Text>
         </View>
-        <TouchableOpacity style={styles.recarregarButton} onPress={recarregarSaldo}>
-          <Text style={styles.recarregarText}>+ R$ 10,00</Text>
-        </TouchableOpacity>
       </View>
 
-      <Text style={styles.subtitle}>Produtos Disponíveis</Text>
-      
-      <FlatList
-        data={produtos}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.produtoItem}
-            onPress={() => comprarProduto(item)}
-          >
-            <View style={styles.produtoInfo}>
-              <Text style={styles.codigo}>{item.codigo}</Text>
-              <Text style={styles.descricao}>{item.nome}</Text>
-              <Text style={styles.preco}>R$ {item.preco}</Text>
+      <TouchableOpacity
+        style={styles.adicionarSaldoButton}
+        onPress={() =>
+          navigation.navigate('RecarregarSaldo', {
+            usuario,
+            onSaldoAtualizado: (novoSaldo) => setSaldo(novoSaldo), // ✅ callback para atualizar saldo
+          })
+        }
+      >
+        <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.sectionTitle}>🛍️ Produtos Disponíveis</Text>
+
+      {carregando ? (
+        <ActivityIndicator size="large" color="#005bbb" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={produtos}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          renderItem={({ item }) => (
+            <View style={styles.produtoCard}>
+              <View style={styles.produtoInfo}>
+                <Text style={styles.produtoNome}>{item.nome}</Text>
+                <Text style={styles.produtoPreco}>R$ {item.preco.toFixed(2)}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.comprarButton,
+                  saldo < item.preco && styles.comprarButtonDisabled,
+                ]}
+                onPress={() => comprarProduto(item)}
+                disabled={saldo < item.preco}
+              >
+                <Text style={styles.comprarText}>
+                  {saldo < item.preco ? 'Saldo Insuficiente' : 'Comprar'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={[
-                styles.comprarButton,
-                saldo < item.preco && styles.comprarButtonDisabled
-              ]}
-              onPress={() => comprarProduto(item)}
-              disabled={saldo < item.preco}
-            >
-              <Text style={styles.comprarText}>COMPRAR</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
-      />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -164,88 +139,107 @@ export default function Home({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#e6f0ff',
     padding: 20,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    alignItems: 'flex-start',
+    marginBottom: 25,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1e3d70',
   },
-  saldoContainer: {
+  subtitle: {
+    color: '#5c6b8a',
+    marginTop: 2,
+    fontSize: 14,
+  },
+  saldoBox: {
     alignItems: 'center',
+    backgroundColor: '#eaf4ff',
+    padding: 10,
+    borderRadius: 10,
   },
   saldoLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#555',
   },
   saldoValor: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'green',
+    color: '#007AFF',
+    marginTop: 4,
   },
-  recarregarButton: {
+  adicionarSaldoButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 3,
   },
-  recarregarText: {
+  adicionarSaldoText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 16,
   },
-  subtitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    color: '#1e3d70',
+    marginBottom: 10,
   },
-  produtoItem: {
+  produtoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    marginBottom: 10,
   },
   produtoInfo: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  codigo: {
-    fontWeight: 'bold',
-    width: 50,
-    color: '#333',
-  },
-  descricao: {
-    flex: 1,
-    marginLeft: 10,
-    color: '#333',
-  },
-  preco: {
-    fontWeight: 'bold',
-    color: 'green',
     marginRight: 10,
+  },
+  produtoNome: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  produtoPreco: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   comprarButton: {
     backgroundColor: '#28a745',
-    paddingHorizontal: 15,
     paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 14,
+    borderRadius: 8,
   },
   comprarButtonDisabled: {
     backgroundColor: '#ccc',
@@ -253,6 +247,6 @@ const styles = StyleSheet.create({
   comprarText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 13,
   },
 });

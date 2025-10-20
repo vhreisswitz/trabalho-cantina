@@ -6,22 +6,27 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Login from './screens/login';
 import Home from './screens/home';
+import RecarregarSaldo from './screens/RecarregarSaldo'; // ✅ nova tela
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        screenOptions={{ 
-          headerShown: false,
-          animation: 'fade'
-        }}
+      <Stack.Navigator
         initialRouteName="Login"
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right', // ✅ transição suave entre telas
+          gestureEnabled: true,          // permite voltar deslizando
+          fullScreenGestureEnabled: true,
+        }}
       >
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen name="RecarregarSaldo" component={RecarregarSaldo} />
       </Stack.Navigator>
+
       <StatusBar style="auto" />
     </NavigationContainer>
   );
