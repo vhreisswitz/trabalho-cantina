@@ -4,14 +4,35 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   Switch,
   ScrollView,
+  Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
-// Componente de Verificação de Usuário
+const mockUsuarios = [
+  {
+    id: '1',
+    nome: 'Victor Hugo',
+    matricula: '2023001',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '2', 
+    nome: 'Kauan',
+    matricula: '2023002',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '3', 
+    nome: 'Wesley',
+    matricula: '2023003',
+    created_at: new Date().toISOString()
+  },
+];
+
 function VerificarUsuario({ isDarkMode }) {
   const [formData, setFormData] = useState({
     nome: '',
@@ -19,6 +40,7 @@ function VerificarUsuario({ isDarkMode }) {
   });
   const [resultado, setResultado] = useState(null);
   const [carregando, setCarregando] = useState(false);
+  const [modoOffline, setModoOffline] = useState(false);
 
   const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
   const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
@@ -28,6 +50,76 @@ function VerificarUsuario({ isDarkMode }) {
       ...prev,
       [name]: value
     }));
+  };
+
+  const testarConexao = async () => {
+    console.log('Testando conexão com Supabase...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .limit(1);
+
+      if (error) {
+        console.log('Erro na conexão:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+        Alert.alert('Erro Conexão', 
+          `Code: ${error.code}\nMessage: ${error.message}`
+        );
+      } else {
+        console.log('Conexão OK! Dados:', data);
+        Alert.alert('Conexão OK', `Encontrados ${data?.length || 0} usuários`);
+      }
+    } catch (err) {
+      console.log('Erro geral:', err);
+      Alert.alert('Erro', err.message);
+    }
+  };
+
+  const testarConectividadeRede = async () => {
+    console.log('Testando conectividade de rede...');
+    
+    const testes = [
+      'https://google.com',
+      'https://github.com', 
+      'https://aoknqmjavdiwfxceehvs.supabase.co',
+      'https://aoknqmjavdiwfxceehvs.supabase.co/rest/v1/'
+    ];
+
+    let resultados = 'Resultados dos Testes de Rede:\n\n';
+
+    for (const url of testes) {
+      try {
+        const start = Date.now();
+        const response = await fetch(url, { method: 'HEAD' });
+        const tempo = Date.now() - start;
+        
+        console.log(`${url} - Status: ${response.status} (${tempo}ms)`);
+        resultados += `✅ ${url}\nStatus: ${response.status} (${tempo}ms)\n\n`;
+      } catch (error) {
+        console.log(`${url} - Erro: ${error.message}`);
+        resultados += `❌ ${url}\nErro: ${error.message}\n\n`;
+      }
+    }
+
+    Alert.alert('Teste de Rede', resultados);
+  };
+
+  const verificarUsuarioMock = async (formData) => {
+    console.log('Usando dados mock (modo offline)');
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const usuario = mockUsuarios.find(u => 
+      u.matricula === formData.matricula && 
+      u.nome.toLowerCase().includes(formData.nome.toLowerCase())
+    );
+    
+    return usuario ? { data: [usuario], error: null } : { data: [], error: null };
   };
 
   async function verificarUsuario() {
@@ -45,36 +137,67 @@ function VerificarUsuario({ isDarkMode }) {
     setResultado(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const usuarioSimulado = {
-        id: 1,
-        nome: formData.nome,
-        matricula: formData.matricula,
-        senha: '••••••',
-        criado_em: new Date().toISOString()
-      };
+      console.log('Iniciando consulta...', formData);
+      console.log('Modo:', modoOffline ? 'OFFLINE' : 'ONLINE');
 
-      const encontrado = Math.random() > 0.5;
+      let data, error;
 
-      if (encontrado) {
+      if (modoOffline) {
+        const result = await verificarUsuarioMock(formData);
+        data = result.data;
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('matricula', formData.matricula)
+          .ilike('nome', `%${formData.nome}%`);
+        data = result.data;
+        error = result.error;
+      }
+
+      console.log('Resposta completa:', { data, error });
+
+      if (error) {
+        console.log('Detalhes do erro:', error);
+        
+        setResultado({
+          status: 'ERRO',
+          mensagem: `Erro: ${error.code || 'ERRO'} - ${error.message}`,
+          usuario: null
+        });
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const usuarioEncontrado = data[0];
+        console.log('Usuário encontrado:', usuarioEncontrado);
+        
         setResultado({
           status: 'ENCONTRADO',
-          mensagem: '✅ Usuário encontrado com sucesso!',
-          usuario: usuarioSimulado
+          mensagem: `✅ Usuário encontrado com sucesso! ${modoOffline ? '(Modo Offline)' : ''}`,
+          usuario: {
+            id: usuarioEncontrado.id,
+            nome: usuarioEncontrado.nome,
+            matricula: usuarioEncontrado.matricula,
+            senha: '••••••',
+            criado_em: usuarioEncontrado.created_at || usuarioEncontrado.criado_em || new Date().toISOString()
+          }
         });
       } else {
+        console.log('Nenhum usuário encontrado');
         setResultado({
           status: 'NAO_ENCONTRADO',
-          mensagem: '❌ Usuário não encontrado!',
+          mensagem: `❌ Usuário não encontrado! ${modoOffline ? '(Modo Offline)' : ''}`,
           usuario: null
         });
       }
+
     } catch (err) {
       console.error('Erro inesperado:', err);
       setResultado({
         status: 'ERRO',
-        mensagem: 'Erro interno do sistema',
+        mensagem: `Erro interno: ${err.message}`,
         usuario: null
       });
     } finally {
@@ -92,6 +215,20 @@ function VerificarUsuario({ isDarkMode }) {
       <Text style={[styles.verificacaoTitle, isDarkMode && styles.darkText]}>
         🔍 Verificar Usuário
       </Text>
+
+      <View style={styles.modoContainer}>
+        <Text style={[styles.modoTexto, isDarkMode && styles.darkText]}>
+          Modo: {modoOffline ? '🔧 Offline (Mock)' : '🌐 Online (Supabase)'}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.button, {backgroundColor: modoOffline ? '#ffa500' : '#007AFF', padding: 8}]}
+          onPress={() => setModoOffline(!modoOffline)}
+        >
+          <Text style={[styles.buttonText, {fontSize: 12}]}>
+            {modoOffline ? '🔄 Tentar Conexão Real' : '🔧 Usar Dados Mock'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <TextInput
         style={[styles.input, isDarkMode && styles.darkInput]}
@@ -130,6 +267,20 @@ function VerificarUsuario({ isDarkMode }) {
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity 
+        style={[styles.button, {backgroundColor: 'orange', marginTop: 10}]} 
+        onPress={testarConexao}
+      >
+        <Text style={styles.buttonText}>Testar Conexão Supabase</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.button, {backgroundColor: 'purple', marginTop: 10}]} 
+        onPress={testarConectividadeRede}
+      >
+        <Text style={styles.buttonText}>Testar Conectividade de Rede</Text>
+      </TouchableOpacity>
+
       {resultado && (
         <View style={[
           styles.resultadoContainer,
@@ -163,6 +314,7 @@ function VerificarUsuario({ isDarkMode }) {
 }
 
 export default function Login() {
+  const navigation = useNavigation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
@@ -178,7 +330,7 @@ export default function Login() {
     setErrors({});
   };
 
-  const handleCadastrar = () => {
+  const handleCadastrar = async () => {
     const novosErros = {};
 
     if (!validarNome(nome)) novosErros.nome = 'Nome inválido. Use apenas letras e espaços.';
@@ -188,7 +340,34 @@ export default function Login() {
     setErrors(novosErros);
 
     if (Object.keys(novosErros).length === 0) {
-      Alert.alert('Entrou com sucesso!', `Nome: ${nome}\nMatrícula: ${matricula}`);
+      try {
+        console.log('Fazendo login...', { nome, matricula });
+        
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('matricula', matricula)
+          .ilike('nome', `%${nome}%`);
+
+        console.log('Resposta login:', { data, error });
+
+        if (error) {
+          console.log('Erro login:', error);
+          setErrors({ geral: `Erro: ${error.message}` });
+          return;
+        }
+
+        if (data && data.length > 0) {
+          console.log('Login bem-sucedido!');
+          navigation.navigate('Home', { usuario: data[0] });
+        } else {
+          console.log('Usuário não encontrado');
+          setErrors({ geral: 'Nome ou matrícula incorretos. Verifique os dados.' });
+        }
+      } catch (error) {
+        console.log('Erro geral login:', error);
+        setErrors({ geral: 'Erro de conexão' });
+      }
     }
   };
 
@@ -207,25 +386,24 @@ export default function Login() {
           />
         </View>
 
-        {/* Abas de Navegação */}
-        <View style={[styles.abasContainer, isDarkMode && styles.darkAbasContainer]}>
-          <TouchableOpacity 
-            style={[styles.aba, abaAtiva === 'login' && styles.abaAtiva]}
-            onPress={() => setAbaAtiva('login')}
-          >
-            <Text style={[styles.abaTexto, abaAtiva === 'login' && styles.abaTextoAtiva]}>
-              🔐 Login
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.aba, abaAtiva === 'verificar' && styles.abaAtiva]}
-            onPress={() => setAbaAtiva('verificar')}
-          >
-            <Text style={[styles.abaTexto, abaAtiva === 'verificar' && styles.abaTextoAtiva]}>
-              🔍 Verificar
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.abasContainer}>
+        <TouchableOpacity 
+          style={[styles.aba, abaAtiva === 'login' && styles.abaAtiva]}
+          onPress={() => setAbaAtiva('login')}
+        >
+          <Text style={[styles.abaTexto, abaAtiva === 'login' && styles.abaTextoAtiva]}>
+            Login
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.aba, abaAtiva === 'verificar' && styles.abaAtiva]}
+          onPress={() => setAbaAtiva('verificar')}
+        >
+          <Text style={[styles.abaTexto, abaAtiva === 'verificar' && styles.abaTextoAtiva]}>
+            Verificar
+          </Text>
+        </TouchableOpacity>
+      </View>
 
         {abaAtiva === 'login' ? (
           <View style={styles.loginContainer}>
@@ -242,15 +420,17 @@ export default function Login() {
             />
             {errors.nome && <Text style={styles.error}>{errors.nome}</Text>}
 
-            <TextInput
-              style={[styles.input, isDarkMode && styles.darkInput]}
-              placeholder="Número da matrícula"
-              placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
-              keyboardType="numeric"
-              value={matricula}
-              onChangeText={setMatricula}
-            />
-            {errors.matricula && <Text style={styles.error}>{errors.matricula}</Text>}
+          <TextInput
+            style={[styles.input, isDarkMode && styles.darkInput]}
+            placeholder="Matrícula"
+            placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+            keyboardType="numeric"
+            value={matricula}
+            onChangeText={setMatricula}
+          />
+          {errors.matricula && <Text style={styles.error}>{errors.matricula}</Text>}
+
+          {errors.geral && <Text style={styles.error}>{errors.geral}</Text>}
 
             <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={handleCadastrar}>
               <Text style={styles.buttonText}>🎯 Entrar no Sistema</Text>
@@ -417,7 +597,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  // Estilos para o componente de verificação
   verificacaoContainer: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     padding: 20,
@@ -495,6 +674,19 @@ const styles = StyleSheet.create({
   },
   detalhesLabel: {
     fontWeight: 'bold',
-    color: '#E5E7EB',
+  },
+  modoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    padding: 10,
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+  },
+  modoTexto: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
