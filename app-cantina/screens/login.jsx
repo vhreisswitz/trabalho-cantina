@@ -376,7 +376,7 @@ export default function Login() {
   return (
     <View style={[styles.container, isDarkMode ? styles.darkGradientBackground : styles.lightGradientBackground]}>
       <ScrollView style={styles.scrollView}>
-        <View style={styles.switchContainer}>
+        {/* <View style={styles.switchContainer}>
           <Text style={[styles.switchLabel, isDarkMode && styles.darkText]}>
             {isDarkMode ? '🌙 Modo Escuro' : '☀️ Modo Claro'}
           </Text>
@@ -386,7 +386,7 @@ export default function Login() {
             thumbColor={isDarkMode ? '#fff' : '#007AFF'}
             trackColor={{ false: '#ccc', true: '#4F46E5' }}
           />
-        </View>
+        </View> */}
 
       <View style={styles.abasContainer}>
         <TouchableOpacity 
