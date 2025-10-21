@@ -12,6 +12,8 @@ import {
   import { useNavigation } from '@react-navigation/native';
   import { supabase } from '../services/database';
   
+// Todo código comentado abaixo é da tela de verificação de usuário que foi incorporada à tela de login, usada somente para testes.
+
   /*
   const mockUsuarios = [
   {
