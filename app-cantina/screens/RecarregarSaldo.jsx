@@ -32,7 +32,7 @@ export default function RecarregarSaldo({ route, navigation }) {
     <View style={styles.container}>
       <Text style={styles.title}>Adicionar Saldo</Text>
 
-      {[5, 10, 20, 50].map((valor) => (
+      {[5, 10, 20, 50, 100].map((valor) => (
         <TouchableOpacity
           key={valor}
           style={styles.botao}
