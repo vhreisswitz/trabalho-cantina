@@ -15,6 +15,7 @@ export default function Home({ route, navigation }) {
   const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [carrinho, setCarrinho] = useState([]); // ✅ Estado do carrinho
 
   useEffect(() => {
     if (route.params?.usuario) {
@@ -41,10 +42,18 @@ export default function Home({ route, navigation }) {
     }
   }
 
+  // ✅ Função para adicionar produto ao carrinho
+  function adicionarAoCarrinho(produto) {
+    setCarrinho(prevCarrinho => [...prevCarrinho, produto]);
+    Alert.alert('✅ Adicionado', `${produto.nome} foi adicionado ao carrinho!`);
+  }
+
+  // ✅ Função para comprar produto individual (mantida do código original)
   async function comprarProduto(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
-    if (saldo < produto.preco)
+    if (saldo < produto.preco) {
       return Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
+    }
 
     try {
       const novoSaldo = saldo - produto.preco;
@@ -72,8 +81,27 @@ export default function Home({ route, navigation }) {
     }
   }
 
+  // ✅ Função para ir para o carrinho
+  function irParaCarrinho() {
+    if (carrinho.length === 0) {
+      Alert.alert('Carrinho vazio', 'Adicione alguns produtos ao carrinho primeiro!');
+      return;
+    }
+    
+    navigation.navigate('Carrinho', { 
+      usuario, 
+      carrinho,
+      onCompraFinalizada: (novoSaldo) => {
+        setSaldo(novoSaldo);
+        setCarrinho([]); // Limpa o carrinho após compra
+        setUsuario(prevUsuario => ({ ...prevUsuario, saldo: novoSaldo }));
+      }
+    });
+  }
+
   return (
     <View style={styles.container}>
+      {/* ✅ HEADER ATUALIZADO COM BOTÃO DO CARRINHO */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>🍔 Cantina SENAI</Text>
@@ -82,9 +110,21 @@ export default function Home({ route, navigation }) {
           </Text>
         </View>
 
-        <View style={styles.saldoBox}>
-          <Text style={styles.saldoLabel}>Saldo atual</Text>
-          <Text style={styles.saldoValor}>R$ {saldo.toFixed(2)}</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.saldoBox}>
+            <Text style={styles.saldoLabel}>Saldo atual</Text>
+            <Text style={styles.saldoValor}>R$ {saldo.toFixed(2)}</Text>
+          </View>
+          
+          {/* ✅ BOTÃO DO CARRINHO */}
+          <TouchableOpacity style={styles.carrinhoButton} onPress={irParaCarrinho}>
+            <Text style={styles.carrinhoIcon}>🛒</Text>
+            {carrinho.length > 0 && (
+              <View style={styles.carrinhoBadge}>
+                <Text style={styles.carrinhoBadgeText}>{carrinho.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -94,8 +134,8 @@ export default function Home({ route, navigation }) {
           navigation.navigate('RecarregarSaldo', {
             usuario,
             onSaldoAtualizado: (novoSaldo) => {
-              setSaldo(novoSaldo); // Atualiza o saldo na tela Home
-              setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo })); // Atualiza o usuário com o novo saldo
+              setSaldo(novoSaldo);
+              setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo }));
             },
           })
         }
@@ -119,18 +159,29 @@ export default function Home({ route, navigation }) {
                 <Text style={styles.produtoPreco}>R$ {item.preco.toFixed(2)}</Text>
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.comprarButton,
-                  saldo < item.preco && styles.comprarButtonDisabled,
-                ]}
-                onPress={() => comprarProduto(item)}
-                disabled={saldo < item.preco}
-              >
-                <Text style={styles.comprarText}>
-                  {saldo < item.preco ? 'Saldo Insuficiente' : 'Comprar'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.botoesContainer}>
+                {/* ✅ BOTÃO ADICIONAR AO CARRINHO */}
+                <TouchableOpacity
+                  style={styles.carrinhoAddButton}
+                  onPress={() => adicionarAoCarrinho(item)}
+                >
+                  <Text style={styles.carrinhoAddText}>+ Carrinho</Text>
+                </TouchableOpacity>
+
+                {/* ✅ BOTÃO COMPRAR (original) */}
+                <TouchableOpacity
+                  style={[
+                    styles.comprarButton,
+                    saldo < item.preco && styles.comprarButtonDisabled,
+                  ]}
+                  onPress={() => comprarProduto(item)}
+                  disabled={saldo < item.preco}
+                >
+                  <Text style={styles.comprarText}>
+                    {saldo < item.preco ? 'Saldo Insuficiente' : 'Comprar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         />
@@ -159,6 +210,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  headerRight: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    gap: 10,
+  },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -184,6 +240,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#007AFF',
     marginTop: 4,
+  },
+  // ✅ ESTILOS DO CARRINHO
+  carrinhoButton: {
+    backgroundColor: '#ff6b35',
+    padding: 12,
+    borderRadius: 10,
+    position: 'relative',
+  },
+  carrinhoIcon: {
+    fontSize: 18,
+  },
+  carrinhoBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#ff3b30',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carrinhoBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   adicionarSaldoButton: {
     backgroundColor: '#007AFF',
@@ -219,13 +301,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 3,
     elevation: 2,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   produtoInfo: {
-    flex: 1,
-    marginRight: 10,
+    marginBottom: 10,
   },
   produtoNome: {
     fontSize: 16,
@@ -238,11 +316,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
   },
+  botoesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  carrinhoAddButton: {
+    backgroundColor: '#ff6b35',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+  },
+  carrinhoAddText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    textAlign: 'center',
+  },
   comprarButton: {
     backgroundColor: '#28a745',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
+    flex: 1,
   },
   comprarButtonDisabled: {
     backgroundColor: '#ccc',
@@ -251,5 +348,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 13,
+    textAlign: 'center',
   },
 });

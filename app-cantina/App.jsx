@@ -4,10 +4,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+// 🧩 Importação das telas
 import Login from './screens/login';
 import Home from './screens/home';
-import RecarregarSaldo from './screens/RecarregarSaldo'; // ✅ nova tela
-// import { Settings } from './screens/settings';
+import RecarregarSaldo from './screens/RecarregarSaldo';
+import Carrinho from './screens/carrinho';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,16 +19,17 @@ export default function App() {
         initialRouteName="Login"
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right', // ✅ transição suave entre telas
-          gestureEnabled: true,          // permite voltar deslizando
+          animation: 'slide_from_right',
+          gestureEnabled: true,
           fullScreenGestureEnabled: true,
         }}
       >
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="RecarregarSaldo" component={RecarregarSaldo} />
-        {/* <Stack.Screen name="Settings" component={Settings} /> */}
+        <Stack.Screen name="Carrinho" component={Carrinho} />
       </Stack.Navigator>
+      {/* ✅ FIM DO NAVIGATOR */}
 
       <StatusBar style="auto" />
     </NavigationContainer>
