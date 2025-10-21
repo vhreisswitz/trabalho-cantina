@@ -417,7 +417,7 @@ export default function Login() {
 
             <TextInput
               style={[styles.input, isDarkMode && styles.darkInput]}
-              placeholder="Nome completo"
+              placeholder="Nome"
               placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
               value={nome}
               onChangeText={setNome}

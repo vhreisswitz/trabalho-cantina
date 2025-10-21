@@ -84,32 +84,20 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 15 }}>
-        <TouchableOpacity
-          style={styles.adicionarSaldoButton}
-          onPress={() =>
-            navigation.navigate('RecarregarSaldo', {
-              usuario,
-              onSaldoAtualizado: (novoSaldo) => setSaldo(novoSaldo),
-            })
-          }
-        >
-          <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.carrinhoButton}
-          onPress={() =>
-            navigation.navigate('Carrinho', {
-              usuario,
-              carrinho,
-              onCompraFinalizada: (novoSaldo) => setSaldo(novoSaldo),
-            })
-          }
-        >
-          <Text style={styles.carrinhoText}>🛒 Carrinho ({carrinho.length})</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.adicionarSaldoButton}
+        onPress={() =>
+          navigation.navigate('RecarregarSaldo', {
+            usuario,
+            onSaldoAtualizado: (novoSaldo) => {
+              setSaldo(novoSaldo); // Atualiza o saldo na tela Home
+              setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo })); // Atualiza o usuário com o novo saldo
+            },
+          })
+        }
+      >
+        <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>🛍️ Produtos Disponíveis</Text>
 
