@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from './screens/login';
 import Home from './screens/home';
 import RecarregarSaldo from './screens/RecarregarSaldo'; // ✅ nova tela
-import { Settings } from './screens/settings';
+// import { Settings } from './screens/settings';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,7 +26,7 @@ export default function App() {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen name="RecarregarSaldo" component={RecarregarSaldo} />
-        <Stack.Screen name="Settings" component={Settings} />
+        {/* <Stack.Screen name="Settings" component={Settings} /> */}
       </Stack.Navigator>
 
       <StatusBar style="auto" />
