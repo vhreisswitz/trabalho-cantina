@@ -5,10 +5,11 @@ import { supabase } from '../services/database';
 export default function RecarregarSaldo({ route, navigation }) {
   const { usuario, onSaldoAtualizado } = route.params;
 
-  async function recarregar(valor) {
+  const recarregar = async (valor) => {
     try {
-      const novoSaldo = (usuario.saldo || 0) + valor;
+      const novoSaldo = usuario.saldo + valor; // Soma o valor ao saldo atual
 
+      // Atualiza o saldo no banco de dados
       const { error } = await supabase
         .from('usuarios')
         .update({ saldo: novoSaldo })
@@ -16,24 +17,16 @@ export default function RecarregarSaldo({ route, navigation }) {
 
       if (error) throw error;
 
-      await supabase.from('cantina_transacoes').insert({
-        usuario_id: usuario.id,
-        tipo: 'recarga',
-        valor,
-        descricao: `Recarga de R$ ${valor}`,
-      });
-
-      Alert.alert('Sucesso', `Saldo recarregado com R$ ${valor}!`);
-
-      // ✅ Atualiza saldo na Home via callback
+      // Atualiza o saldo na tela principal via callback
       if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
 
-      navigation.goBack();
+      Alert.alert('✅ Sucesso', `Saldo atualizado para R$ ${novoSaldo.toFixed(2)}`);
+      navigation.goBack(); // Volta para a tela anterior
     } catch (error) {
       console.error('Erro na recarga:', error);
       Alert.alert('Erro', 'Não foi possível realizar a recarga.');
     }
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -62,20 +55,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#1e3d70',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   botao: {
     backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 10,
+    padding: 15,
+    borderRadius: 8,
     marginVertical: 10,
-    elevation: 3,
+    width: 150,
+    alignItems: 'center',
   },
   botaoTexto: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

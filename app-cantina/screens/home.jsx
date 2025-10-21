@@ -93,7 +93,10 @@ export default function Home({ route, navigation }) {
         onPress={() =>
           navigation.navigate('RecarregarSaldo', {
             usuario,
-            onSaldoAtualizado: (novoSaldo) => setSaldo(novoSaldo), // ✅ callback para atualizar saldo
+            onSaldoAtualizado: (novoSaldo) => {
+              setSaldo(novoSaldo); // Atualiza o saldo na tela Home
+              setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo })); // Atualiza o usuário com o novo saldo
+            },
           })
         }
       >
