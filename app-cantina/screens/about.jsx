@@ -1,22 +1,25 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
-const AboutScreen = () => {
-    return (
+export default function About(){
+    return(
         <View style={styles.container}>
-        <Text style={styles.title}>About This App</Text>
-        <Text style={styles.content}>
-          Este aplicativo tem o intuito de facilitar a organização e o gerenciamento de pedidos em uma cantina escolar. Com ele, os alunos podem fazer seus pedidos de forma rápida e prática, enquanto os administradores podem acompanhar e gerenciar esses pedidos com eficiência.   
-        </Text>
-        <Text style={styles.content}>
-            Version: 1.0.0
-        </Text>
-        <Text style={styles.content}>
-        Criado por: Victor Hugo Figueira Reisswitz, Wesley Gabriel Bairros Correa, Kauan  Petry
-        </Text>
+            <Text style={styles.title}>Sobre o App Cantina</Text>
+            <Text style={styles.content}>
+                O App Cantina foi desenvolvido para facilitar as compras na cantina escolar. 
+                Com ele, os alunos podem visualizar o cardápio, adicionar itens ao carrinho e 
+                finalizar suas compras de forma rápida e segura.
+            </Text>
+            <Text style={styles.content}>
+                Desenvolvido por Victor Hugo Figueira Reisswitz, Wesley Gabriel Bairros Correa e Kauan Petry, este aplicativo visa melhorar a experiência dos 
+                usuários, proporcionando uma interface amigável e funcionalidades práticas.
+            </Text>
+            <Text style={styles.content}>
+                Versão do App: 1.0.0
+            </Text>
         </View>
     );
-    }
+}
 
 const styles = StyleSheet.create({
     container: {
