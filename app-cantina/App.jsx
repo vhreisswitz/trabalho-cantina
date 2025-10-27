@@ -11,7 +11,6 @@ import RecarregarSaldo from './screens/RecarregarSaldo';
 import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
-import Perfil from './screens/profile';
 
 const Stack = createNativeStackNavigator();
 
