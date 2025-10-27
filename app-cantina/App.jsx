@@ -11,6 +11,7 @@ import RecarregarSaldo from './screens/RecarregarSaldo';
 import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
+import Perfil from './screens/profile';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +33,7 @@ export default function App() {
         <Stack.Screen name="Carrinho" component={Carrinho} />
         {/* <Stack.Screen name="Configura" component={Configuracoes}/> */}
         {/* <Stack.Screen name="Sobre" component={Sobre} /> */}
+        {/* <Stack.Screen name="Perfil" component={Perfil} /> */}
       </Stack.Navigator>
       {/* ✅ FIM DO NAVIGATOR */}
 
