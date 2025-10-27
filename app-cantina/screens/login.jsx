@@ -414,7 +414,7 @@ export default function Login() {
         {abaAtiva === 'login' ? (
           <View style={styles.loginContainer}>
             <Text style={[styles.title, isDarkMode && styles.darkText]}>
-              🚀 Sistema de Acesso
+               Sistema de Acesso
             </Text>
 
             <TextInput
@@ -439,11 +439,11 @@ export default function Login() {
           {errors.geral && <Text style={styles.error}>{errors.geral}</Text>}
 
             <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={handleCadastrar}>
-              <Text style={styles.buttonText}>🎯 Entrar no Sistema</Text>
+              <Text style={styles.buttonText}> Entrar no Sistema</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={limparCampos}>
-              <Text style={styles.buttonText}>🧹 Limpar Campos</Text>
+              <Text style={styles.buttonText}> Limpar Campos</Text>
             </TouchableOpacity>
           </View>
         ) : (
