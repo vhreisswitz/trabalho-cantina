@@ -12,6 +12,7 @@ import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Perfil from './screens/profile';
+import Extrato from './screens/extrato';
 
 const Stack = createNativeStackNavigator();
 
@@ -76,6 +77,12 @@ export default function App() {
             animation: 'slide_from_right', // Transição padrão para perfil
           }}
         />
+        <Stack.Screen 
+          name="Extrato" 
+          component={Extrato}
+          options={{
+            animation: 'slide_from_right', // Transição padrão para extrato
+          }}
       </Stack.Navigator>
       {/* ✅ FIM DO NAVIGATOR */}
 
