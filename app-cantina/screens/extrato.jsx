@@ -1,5 +1,4 @@
-// ExtratoScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,93 +6,82 @@ import {
   ScrollView, 
   StatusBar, 
   TouchableOpacity, 
-  TextInput,
+  ActivityIndicator,
+  Alert,
   Modal,
-  Alert
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+// Importe as funções do Supabase
+import { getTransacoesByUsuario, getEstatisticasUsuario } from '../services/database';
 
 export default function ExtratoScreen({ navigation, route }) {
   const usuario = route.params?.usuario;
   const [filtro, setFiltro] = useState('todos');
   const [modalVisible, setModalVisible] = useState(false);
   const [transacaoSelecionada, setTransacaoSelecionada] = useState(null);
+  const [transacoes, setTransacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [estatisticas, setEstatisticas] = useState({
+    saldo: 0,
+    totalEntradas: 0,
+    totalSaidas: 0,
+    quantidadeRecargas: 0,
+    quantidadeCompras: 0
+  });
 
-  const transacoes = [
-    {
-      id: 1,
-      data: '15/12/2024 14:30',
-      descricao: 'Recarga de Celular',
-      valor: 50.00,
-      tipo: 'entrada',
-      categoria: 'Recarga',
-      estabelecimento: 'App Recarga',
-      status: 'Concluído'
-    },
-    {
-      id: 2,
-      data: '14/12/2024 18:45',
-      descricao: 'Supermercado',
-      valor: 125.80,
-      tipo: 'saida',
-      categoria: 'Alimentação',
-      estabelecimento: 'Mercado Central',
-      status: 'Concluído'
-    },
-    {
-      id: 3,
-      data: '13/12/2024 20:15',
-      descricao: 'Uber',
-      valor: 18.50,
-      tipo: 'saida',
-      categoria: 'Transporte',
-      estabelecimento: 'Uber',
-      status: 'Concluído'
-    },
-    {
-      id: 4,
-      data: '12/12/2024 09:30',
-      descricao: 'Transferência Recebida',
-      valor: 200.00,
-      tipo: 'entrada',
-      categoria: 'Transferência',
-      estabelecimento: 'João Silva',
-      status: 'Concluído'
-    },
-    {
-      id: 5,
-      data: '11/12/2024 16:20',
-      descricao: 'Restaurante',
-      valor: 85.00,
-      tipo: 'saida',
-      categoria: 'Alimentação',
-      estabelecimento: 'Restaurante Sabor',
-      status: 'Concluído'
-    },
-    {
-      id: 6,
-      data: '10/12/2024 11:15',
-      descricao: 'Farmácia',
-      valor: 45.30,
-      tipo: 'saida',
-      categoria: 'Saúde',
-      estabelecimento: 'Drogaria Saúde',
-      status: 'Concluído'
+  // Função para buscar transações do banco
+  const fetchTransacoes = async () => {
+    try {
+      setLoading(true);
+      console.log('Buscando transações para usuário:', usuario.id);
+      
+      // Busca transações
+      const transacoesDB = await getTransacoesByUsuario(usuario.id);
+      console.log('Transações encontradas:', transacoesDB);
+      
+      // Busca estatísticas
+      const stats = await getEstatisticasUsuario(usuario.id);
+      
+      setTransacoes(transacoesDB);
+      setEstatisticas(stats);
+    } catch (error) {
+      console.error('Erro ao buscar transações:', error);
+      Alert.alert('Erro', 'Não foi possível carregar o extrato');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  ];
+  };
+
+  // Busca transações quando a tela é aberta
+  useEffect(() => {
+    fetchTransacoes();
+  }, [usuario.id]);
+
+  // Pull to refresh
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTransacoes();
+  };
 
   const transacoesFiltradas = filtro === 'todos' 
     ? transacoes 
-    : transacoes.filter(transacao => transacao.tipo === filtro);
-
-  const saldoTotal = transacoes.reduce((total, transacao) => {
-    return transacao.tipo === 'entrada' ? total + transacao.valor : total - transacao.valor;
-  }, 0);
-
-  const abrirDetalhes = (transacao) => {
-    setTransacaoSelecionada(transacao);
-    setModalVisible(true);
-  };
+    : transacoes.filter(transacao => {
+        if (filtro === 'entrada') {
+          return transacao.tipo === 'entrada' || 
+                 transacao.descricao?.toLowerCase().includes('recarga') ||
+                 transacao.descricao?.toLowerCase().includes('carga') ||
+                 transacao.descricao?.toLowerCase().includes('saldo');
+        } else {
+          return transacao.tipo === 'saida' || 
+                 !transacao.descricao?.toLowerCase().includes('recarga') &&
+                 !transacao.descricao?.toLowerCase().includes('carga') &&
+                 !transacao.descricao?.toLowerCase().includes('saldo');
+        }
+      });
 
   const exportarExtrato = () => {
     Alert.alert(
@@ -107,34 +95,75 @@ export default function ExtratoScreen({ navigation, route }) {
     );
   };
 
-  const TransacaoItem = ({ transacao }) => (
-    <TouchableOpacity 
-      style={styles.transacaoItem}
-      onPress={() => abrirDetalhes(transacao)}
-    >
-      <View style={styles.transacaoIcon}>
-        <Ionicons 
-          name={transacao.tipo === 'entrada' ? 'arrow-down' : 'arrow-up'} 
-          size={20} 
-          color={transacao.tipo === 'entrada' ? '#34C759' : '#FF3B30'} 
-        />
+  const abrirDetalhes = (transacao) => {
+    setTransacaoSelecionada(transacao);
+    setModalVisible(true);
+  };
+
+  const TransacaoItem = ({ transacao }) => {
+    // Determina se é recarga (entrada) ou compra (saída)
+    const isRecarga = transacao.tipo === 'entrada' || 
+                     transacao.descricao?.toLowerCase().includes('recarga') ||
+                     transacao.descricao?.toLowerCase().includes('carga') ||
+                     transacao.descricao?.toLowerCase().includes('saldo');
+
+    const icone = isRecarga ? 'add-circle-outline' : 'cart-outline';
+    const cor = isRecarga ? '#34C759' : '#FF3B30';
+    const sinal = isRecarga ? '+' : '-';
+    const tipoTexto = isRecarga ? 'Recarga' : 'Compra';
+
+    return (
+      <TouchableOpacity 
+        style={styles.transacaoItem}
+        onPress={() => abrirDetalhes(transacao)}
+      >
+        <View style={[styles.transacaoIcon, { backgroundColor: isRecarga ? '#E8F5E8' : '#FFEBEE' }]}>
+          <Ionicons 
+            name={icone} 
+            size={20} 
+            color={cor} 
+          />
+        </View>
+        <View style={styles.transacaoInfo}>
+          <Text style={styles.transacaoDescricao}>{transacao.descricao}</Text>
+          <Text style={styles.transacaoData}>
+            {new Date(transacao.data).toLocaleDateString('pt-BR')} • {transacao.estabelecimento}
+          </Text>
+          <View style={styles.tipoContainer}>
+            <Text style={[styles.tipoText, { color: cor }]}>{tipoTexto}</Text>
+            <Text style={styles.transacaoCategoria}>{transacao.categoria}</Text>
+          </View>
+        </View>
+        <View style={styles.transacaoValor}>
+          <Text style={[styles.valorText, { color: cor }]}>
+            {sinal} R$ {transacao.valor.toFixed(2)}
+          </Text>
+          <Text style={styles.statusText}>{transacao.status}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Extrato</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Carregando extrato...</Text>
+        </View>
       </View>
-      <View style={styles.transacaoInfo}>
-        <Text style={styles.transacaoDescricao}>{transacao.descricao}</Text>
-        <Text style={styles.transacaoData}>{transacao.data}</Text>
-        <Text style={styles.transacaoEstabelecimento}>{transacao.estabelecimento}</Text>
-      </View>
-      <View style={styles.transacaoValor}>
-        <Text style={[
-          styles.valorText,
-          { color: transacao.tipo === 'entrada' ? '#34C759' : '#FF3B30' }
-        ]}>
-          {transacao.tipo === 'entrada' ? '+' : '-'} R$ {transacao.valor.toFixed(2)}
-        </Text>
-        <Text style={styles.statusText}>{transacao.status}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -156,24 +185,20 @@ export default function ExtratoScreen({ navigation, route }) {
 
       {/* Resumo */}
       <View style={styles.resumoContainer}>
-        <Text style={styles.resumoTitle}>Saldo Total</Text>
-        <Text style={styles.saldoTotal}>R$ {saldoTotal.toFixed(2)}</Text>
+        <Text style={styles.resumoTitle}>Saldo Disponível</Text>
+        <Text style={styles.saldoTotal}>R$ {estatisticas.saldo.toFixed(2)}</Text>
         <View style={styles.resumoLinha}>
           <View style={styles.resumoItem}>
-            <Text style={styles.resumoValorEntrada}>+ R$ {
-              transacoes.filter(t => t.tipo === 'entrada')
-                .reduce((total, t) => total + t.valor, 0)
-                .toFixed(2)
-            }</Text>
-            <Text style={styles.resumoLabel}>Entradas</Text>
+            <Text style={styles.resumoValorEntrada}>+ R$ {estatisticas.totalEntradas.toFixed(2)}</Text>
+            <Text style={styles.resumoLabel}>
+              {estatisticas.quantidadeRecargas} Recarga{estatisticas.quantidadeRecargas !== 1 ? 's' : ''}
+            </Text>
           </View>
           <View style={styles.resumoItem}>
-            <Text style={styles.resumoValorSaida}>- R$ {
-              transacoes.filter(t => t.tipo === 'saida')
-                .reduce((total, t) => total + t.valor, 0)
-                .toFixed(2)
-            }</Text>
-            <Text style={styles.resumoLabel}>Saídas</Text>
+            <Text style={styles.resumoValorSaida}>- R$ {estatisticas.totalSaidas.toFixed(2)}</Text>
+            <Text style={styles.resumoLabel}>
+              {estatisticas.quantidadeCompras} Compra{estatisticas.quantidadeCompras !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
       </View>
@@ -190,22 +215,79 @@ export default function ExtratoScreen({ navigation, route }) {
           style={[styles.filtroButton, filtro === 'entrada' && styles.filtroAtivo]}
           onPress={() => setFiltro('entrada')}
         >
-          <Text style={[styles.filtroText, filtro === 'entrada' && styles.filtroTextAtivo]}>Entradas</Text>
+          <Ionicons 
+            name="add-circle-outline" 
+            size={16} 
+            color={filtro === 'entrada' ? '#FFFFFF' : '#34C759'} 
+            style={styles.filtroIcon}
+          />
+          <Text style={[styles.filtroText, filtro === 'entrada' && styles.filtroTextAtivo]}>Recargas</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.filtroButton, filtro === 'saida' && styles.filtroAtivo]}
           onPress={() => setFiltro('saida')}
         >
-          <Text style={[styles.filtroText, filtro === 'saida' && styles.filtroTextAtivo]}>Saídas</Text>
+          <Ionicons 
+            name="cart-outline" 
+            size={16} 
+            color={filtro === 'saida' ? '#FFFFFF' : '#FF3B30'} 
+            style={styles.filtroIcon}
+          />
+          <Text style={[styles.filtroText, filtro === 'saida' && styles.filtroTextAtivo]}>Compras</Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* Lista de Transações */}
-      <ScrollView style={styles.listaContainer}>
-        <Text style={styles.listaTitle}>Últimas Transações</Text>
-        {transacoesFiltradas.map(transacao => (
-          <TransacaoItem key={transacao.id} transacao={transacao} />
-        ))}
+      <ScrollView 
+        style={styles.listaContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#007AFF']}
+          />
+        }
+      >
+        <Text style={styles.listaTitle}>
+          {transacoesFiltradas.length === 0 
+            ? 'Nenhuma transação' 
+            : filtro === 'todos' 
+              ? 'Todas as Transações' 
+              : filtro === 'entrada' 
+                ? 'Recargas de Saldo' 
+                : 'Compras na Cantina'
+          }
+        </Text>
+        
+        {transacoesFiltradas.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons 
+              name="document-text-outline" 
+              size={64} 
+              color="#C7C7CC" 
+            />
+            <Text style={styles.emptyStateText}>
+              {filtro === 'todos' 
+                ? 'Nenhuma transação encontrada' 
+                : filtro === 'entrada'
+                  ? 'Nenhuma recarga encontrada'
+                  : 'Nenhuma compra encontrada'
+              }
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              {filtro === 'todos' 
+                ? 'Você ainda não possui transações' 
+                : filtro === 'entrada'
+                  ? 'Suas recargas de saldo aparecerão aqui'
+                  : 'Suas compras na cantina aparecerão aqui'
+              }
+            </Text>
+          </View>
+        ) : (
+          transacoesFiltradas.map(transacao => (
+            <TransacaoItem key={transacao.id} transacao={transacao} />
+          ))
+        )}
       </ScrollView>
 
       {/* Modal de Detalhes */}
@@ -235,15 +317,38 @@ export default function ExtratoScreen({ navigation, route }) {
                   <Text style={styles.detalhesLabel}>Valor</Text>
                   <Text style={[
                     styles.detalhesValor,
-                    { color: transacaoSelecionada.tipo === 'entrada' ? '#34C759' : '#FF3B30' }
+                    { 
+                      color: (transacaoSelecionada.tipo === 'entrada' || 
+                             transacaoSelecionada.descricao?.toLowerCase().includes('recarga') ||
+                             transacaoSelecionada.descricao?.toLowerCase().includes('carga') ||
+                             transacaoSelecionada.descricao?.toLowerCase().includes('saldo')) 
+                             ? '#34C759' : '#FF3B30' 
+                    }
                   ]}>
-                    {transacaoSelecionada.tipo === 'entrada' ? '+' : '-'} R$ {transacaoSelecionada.valor.toFixed(2)}
+                    {(transacaoSelecionada.tipo === 'entrada' || 
+                      transacaoSelecionada.descricao?.toLowerCase().includes('recarga') ||
+                      transacaoSelecionada.descricao?.toLowerCase().includes('carga') ||
+                      transacaoSelecionada.descricao?.toLowerCase().includes('saldo')) 
+                      ? '+' : '-'} R$ {transacaoSelecionada.valor.toFixed(2)}
                   </Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
                   <Text style={styles.detalhesLabel}>Data</Text>
-                  <Text style={styles.detalhesValue}>{transacaoSelecionada.data}</Text>
+                  <Text style={styles.detalhesValue}>
+                    {new Date(transacaoSelecionada.data).toLocaleString('pt-BR')}
+                  </Text>
+                </View>
+                
+                <View style={styles.detalhesItem}>
+                  <Text style={styles.detalhesLabel}>Tipo</Text>
+                  <Text style={styles.detalhesValue}>
+                    {(transacaoSelecionada.tipo === 'entrada' || 
+                      transacaoSelecionada.descricao?.toLowerCase().includes('recarga') ||
+                      transacaoSelecionada.descricao?.toLowerCase().includes('carga') ||
+                      transacaoSelecionada.descricao?.toLowerCase().includes('saldo')) 
+                      ? 'Recarga de Saldo' : 'Compra na Cantina'}
+                  </Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
@@ -293,6 +398,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
+  headerRight: {
+    width: 24,
+  },
   resumoContainer: {
     backgroundColor: '#FFFFFF',
     padding: 20,
@@ -335,14 +443,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   resumoLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#8E8E93',
+    textAlign: 'center',
   },
   filtrosContainer: {
     paddingHorizontal: 16,
     marginBottom: 8,
   },
   filtroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -351,6 +462,9 @@ const styles = StyleSheet.create({
   },
   filtroAtivo: {
     backgroundColor: '#007AFF',
+  },
+  filtroIcon: {
+    marginRight: 6,
   },
   filtroText: {
     fontSize: 14,
@@ -387,7 +501,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -406,8 +519,22 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginBottom: 2,
   },
-  transacaoEstabelecimento: {
-    fontSize: 14,
+  tipoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  tipoText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginRight: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#F2F2F7',
+  },
+  transacaoCategoria: {
+    fontSize: 12,
     color: '#007AFF',
   },
   transacaoValor: {
@@ -466,5 +593,32 @@ const styles = StyleSheet.create({
   detalhesValor: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#8E8E93',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#C7C7CC',
+    textAlign: 'center',
   },
 });
