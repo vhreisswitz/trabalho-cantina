@@ -95,9 +95,9 @@ export default function Home({ route, navigation }) {
       Alert.alert('Carrinho vazio', 'Adicione alguns produtos ao carrinho primeiro!');
       return;
     }
-    
-    navigation.navigate('Carrinho', { 
-      usuario, 
+
+    navigation.navigate('Carrinho', {
+      usuario,
       carrinho,
       onCompraFinalizada: (novoSaldo) => {
         setSaldo(novoSaldo);
@@ -132,10 +132,10 @@ export default function Home({ route, navigation }) {
               R$ {saldo.toFixed(2)}
             </Text>
           </View>
-          
+
           <View style={styles.headerButtons}>
-            <TouchableOpacity 
-              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]} 
+            <TouchableOpacity
+              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaCarrinho}
             >
               <Text style={[styles.carrinhoIcon, { color: CORES_SENAI.azul_principal }]}>🛒</Text>
@@ -147,8 +147,8 @@ export default function Home({ route, navigation }) {
             </TouchableOpacity>
 
             {/* BOTÃO SETTINGS */}
-            <TouchableOpacity 
-              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]} 
+            <TouchableOpacity
+              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaConfiguracoes}
             >
               <Text style={[styles.settingsIcon, { color: CORES_SENAI.azul_principal }]}>⚙️</Text>
