@@ -83,8 +83,10 @@ export default function App() {
           options={{
             animation: 'slide_from_right', // Transição padrão para extrato
           }}
+        />
+        
       </Stack.Navigator>
-      {/* ✅ FIM DO NAVIGATOR */}
+      {/* FIM DO NAVEGADOR */}
 
       <StatusBar style="auto" />
     </NavigationContainer>
