@@ -12,6 +12,7 @@ import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Perfil from './screens/profile';
+import Extrato from './screens/extrato';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,53 +28,60 @@ export default function App() {
           fullScreenGestureEnabled: true,
         }}
       >
-        <Stack.Screen 
-          name="Login" 
+        <Stack.Screen
+          name="Login"
           component={Login}
           options={{
             animation: 'fade', // Transição suave para o login
           }}
         />
-        <Stack.Screen 
-          name="Home" 
+        <Stack.Screen
+          name="Home"
           component={Home}
           options={{
             animation: 'slide_from_bottom', // Entrada da home vindo de baixo
           }}
         />
-        <Stack.Screen 
-          name="RecarregarSaldo" 
+        <Stack.Screen
+          name="RecarregarSaldo"
           component={RecarregarSaldo}
           options={{
             animation: 'slide_from_right', // Mantém o deslize da direita
           }}
         />
-        <Stack.Screen 
-          name="Carrinho" 
+        <Stack.Screen
+          name="Carrinho"
           component={Carrinho}
           options={{
             animation: 'slide_from_right', // Mantém o deslize da direita
           }}
         />
-        <Stack.Screen 
-          name="Configuracoes" 
+        <Stack.Screen
+          name="Configuracoes"
           component={Configuracoes}
           options={{
             animation: 'slide_from_left', // Diferente para configurações
           }}
         />
-        <Stack.Screen 
-          name="Sobre" 
+        <Stack.Screen
+          name="Sobre"
           component={Sobre}
           options={{
             animation: 'fade_from_bottom', // Transição suave para sobre
           }}
         />
-        <Stack.Screen 
-          name="Perfil" 
+        <Stack.Screen
+          name="Perfil"
           component={Perfil}
           options={{
             animation: 'slide_from_right', // Transição padrão para perfil
+          }}
+        />
+        <Stack.Screen
+          name='Extrato'
+          component={Extrato}
+          options={{
+            animation: 'slide_from_right', // Transição padrão para extrato
           }}
         />
       </Stack.Navigator>
