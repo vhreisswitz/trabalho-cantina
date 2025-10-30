@@ -92,17 +92,9 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para extrato
+  // Função para extrato - agora navega para tela de histórico
   const handleStatement = () => {
-    Alert.alert(
-      "Extrato",
-      "Últimas transações:\n\n• 15/12 - Recarga: R$ 50,00\n• 14/12 - Compra: R$ 12,00\n• 13/12 - Compra: R$ 8,50",
-      [
-        { text: "Ver Completo", onPress: () => Alert.alert("Extrato Completo", "Carregando todas as transações...") },
-        { text: "Exportar", onPress: () => Alert.alert("Exportar", "Exportando extrato...") },
-        { text: "Fechar", style: "cancel" }
-      ]
-    );
+    navigation.navigate('Extrato', { usuario });
   };
 
   // Função para selecionar idioma
@@ -284,6 +276,7 @@ export default function Settings({ navigation, route }) {
           <SettingItem
             icon="document-text-outline"
             title="Extrato"
+            subtitle="Histórico de transações"
             isLast={true}
             onPress={handleStatement}
           />
