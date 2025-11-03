@@ -10,7 +10,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { supabase } from '../services/database';
-import useCantinaTickets from './hooks/useCantinaTickets';
+import useCantinaTickets from '../hooks/useCantinaTickets';
 
 export default function MeusTickets({ route, navigation }) {
   const [tickets, setTickets] = useState([]);

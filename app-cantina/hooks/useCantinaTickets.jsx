@@ -1,4 +1,3 @@
-// hooks/useCantinaTickets.js
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '../services/database';

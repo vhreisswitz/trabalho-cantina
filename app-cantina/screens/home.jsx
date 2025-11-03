@@ -10,7 +10,7 @@ import {
   Image
 } from 'react-native';
 import { supabase } from '../services/database';
-import useCantinaTickets from '../hook/useCantinaTickets';
+import useCantinaTickets from '../hooks/useCantinaTickets';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);

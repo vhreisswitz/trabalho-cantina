@@ -4,7 +4,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// esta parte é especifica para importar as telas.
+
 import Login from './screens/login';
 import Home from './screens/home';
 import RecarregarSaldo from './screens/RecarregarSaldo';
