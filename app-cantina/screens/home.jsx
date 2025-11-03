@@ -22,8 +22,8 @@ export default function Home({ route, navigation }) {
   // Hook para tickets
   const { 
     gerarTicketGratuito, 
-    comprarTicket, 
-    verificarTicketGratuito,
+    comprarTicket,
+    inicializarTicketBoasVindas,
     loading: loadingTicket 
   } = useCantinaTickets();
 
@@ -41,6 +41,10 @@ export default function Home({ route, navigation }) {
     if (route.params?.usuario) {
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
+      
+      // ✅ INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
+      console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
+      inicializarTicketBoasVindas(route.params.usuario.id);
     } else {
       Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
       navigation.navigate('Login');
@@ -102,14 +106,6 @@ export default function Home({ route, navigation }) {
   // FUNÇÃO PARA PEGAR TICKET GRATUITO
   async function pegarTicketGratuito(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
-    
-    // Verificar se já tem ticket gratuito
-    const jaTemTicket = await verificarTicketGratuito(produto.id, usuario.id);
-    
-    if (jaTemTicket) {
-      Alert.alert('🎫 Ticket Disponível', 'Você já tem um ticket gratuito para este produto! Vá em "Meus Tickets" para usar.');
-      return;
-    }
 
     Alert.alert(
       'Ticket Gratuito',
@@ -296,7 +292,7 @@ export default function Home({ route, navigation }) {
                 
                 {/* INDICADOR DE TICKET GRATUITO */}
                 {produtoAceitaTicket(item) && (
-                  <Text style={styles.ticketGratuitoInfo}>🎫 Primeiro vale é GRÁTIS!</Text>
+                  <Text style={styles.ticketGratuitoInfo}>🎫 Disponível como Vale</Text>
                 )}
               </View>
 
