@@ -13,6 +13,9 @@ import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Perfil from './screens/profile';
 import Extrato from './screens/extrato';
+import { PointerType } from 'react-native-gesture-handler';
+import MeusTickets from './screens/meusTickets';
+import TicketDigital from './screens/TicketDigital';
 
 const Stack = createNativeStackNavigator();
 
@@ -83,6 +86,16 @@ export default function App() {
           options={{
             animation: 'slide_from_right', // Transição padrão para extrato
           }}
+        />
+         <Stack.Screen 
+          name="MeusTickets" 
+          component={MeusTickets}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TicketDigital"
+          component={TicketDigital}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
       {/* ✅ FIM DO NAVIGATOR */}

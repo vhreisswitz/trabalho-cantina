@@ -10,6 +10,7 @@ import {
   Image
 } from 'react-native';
 import { supabase } from '../services/database';
+import useCantinaTickets from '../hook/useCantinaTickets';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
@@ -17,6 +18,14 @@ export default function Home({ route, navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
+
+  // Hook para tickets
+  const { 
+    gerarTicketGratuito, 
+    comprarTicket, 
+    verificarTicketGratuito,
+    loading: loadingTicket 
+  } = useCantinaTickets();
 
   // Cores oficiais do SENAI
   const CORES_SENAI = {
@@ -90,6 +99,65 @@ export default function Home({ route, navigation }) {
     }
   }
 
+  // FUNÇÃO PARA PEGAR TICKET GRATUITO
+  async function pegarTicketGratuito(produto) {
+    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
+    
+    // Verificar se já tem ticket gratuito
+    const jaTemTicket = await verificarTicketGratuito(produto.id, usuario.id);
+    
+    if (jaTemTicket) {
+      Alert.alert('🎫 Ticket Disponível', 'Você já tem um ticket gratuito para este produto! Vá em "Meus Tickets" para usar.');
+      return;
+    }
+
+    Alert.alert(
+      'Ticket Gratuito',
+      `Deseja pegar um vale GRATUITO para ${produto.nome}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Pegar Vale Grátis', 
+          onPress: async () => {
+            const ticket = await gerarTicketGratuito(produto.id, usuario.id);
+            if (ticket) {
+              navigation.navigate('TicketDigital', { 
+                ticket,
+                usuario
+              });
+            }
+          }
+        }
+      ]
+    );
+  }
+
+  // FUNÇÃO PARA COMPRAR TICKET (após usar o gratuito)
+  async function comprarTicketProduto(produto) {
+    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
+    
+    Alert.alert(
+      'Comprar Vale',
+      `Deseja comprar um vale para ${produto.nome} por R$ ${produto.preco}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Comprar Vale', 
+          onPress: async () => {
+            const resultado = await comprarTicket(produto.id, usuario.id, saldo);
+            if (resultado) {
+              setSaldo(resultado.novoSaldo);
+              navigation.navigate('TicketDigital', { 
+                ticket: resultado.ticket,
+                usuario: { ...usuario, saldo: resultado.novoSaldo }
+              });
+            }
+          }
+        }
+      ]
+    );
+  }
+
   function irParaCarrinho() {
     if (carrinho.length === 0) {
       Alert.alert('Carrinho vazio', 'Adicione alguns produtos ao carrinho primeiro!');
@@ -109,6 +177,16 @@ export default function Home({ route, navigation }) {
 
   function irParaConfiguracoes() {
     navigation.navigate('Configuracoes', { usuario });
+  }
+
+  function irParaMeusTickets() {
+    navigation.navigate('MeusTickets', { usuario });
+  }
+
+  // FUNÇÃO PARA VERIFICAR SE PRODUTO ACEITA TICKET
+  function produtoAceitaTicket(produto) {
+    // Produtos com código P001, P002, P003, etc geram tickets
+    return produto.codigo?.startsWith('P00');
   }
 
   return (
@@ -146,7 +224,13 @@ export default function Home({ route, navigation }) {
               )}
             </TouchableOpacity>
 
-            {/* BOTÃO SETTINGS */}
+            <TouchableOpacity 
+              style={[styles.ticketsButton, { backgroundColor: CORES_SENAI.branco }]} 
+              onPress={irParaMeusTickets}
+            >
+              <Text style={[styles.ticketsIcon, { color: CORES_SENAI.azul_principal }]}>🎫</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity 
               style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]} 
               onPress={irParaConfiguracoes}
@@ -209,16 +293,15 @@ export default function Home({ route, navigation }) {
                 {item.descricao && (
                   <Text style={styles.produtoDescricao}>{item.descricao}</Text>
                 )}
+                
+                {/* INDICADOR DE TICKET GRATUITO */}
+                {produtoAceitaTicket(item) && (
+                  <Text style={styles.ticketGratuitoInfo}>🎫 Primeiro vale é GRÁTIS!</Text>
+                )}
               </View>
 
               <View style={styles.botoesContainer}>
-                <TouchableOpacity
-                  style={[styles.carrinhoAddButton, { backgroundColor: CORES_SENAI.laranja }]}
-                  onPress={() => adicionarAoCarrinho(item)}
-                >
-                  <Text style={styles.carrinhoAddText}>+ Carrinho</Text>
-                </TouchableOpacity>
-
+                {/* BOTÃO EXISTENTE - COMPRAR DIRETO */}
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
@@ -229,9 +312,39 @@ export default function Home({ route, navigation }) {
                   disabled={saldo < item.preco}
                 >
                   <Text style={styles.comprarText}>
-                    {saldo < item.preco ? 'Saldo Insuficiente' : 'Comprar Agora'}
+                    {saldo < item.preco ? 'Saldo Insuf.' : 'Comprar Agora'}
                   </Text>
                 </TouchableOpacity>
+
+                {/* BOTÃO TICKET GRATUITO (apenas para produtos que aceitam) */}
+                {produtoAceitaTicket(item) && (
+                  <TouchableOpacity
+                    style={[styles.ticketGratuitoButton, { backgroundColor: CORES_SENAI.laranja }]}
+                    onPress={() => pegarTicketGratuito(item)}
+                    disabled={loadingTicket}
+                  >
+                    <Text style={styles.ticketText}>
+                      {loadingTicket ? '...' : 'Vale Grátis'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* BOTÃO COMPRAR TICKET (apenas para produtos que aceitam) */}
+                {produtoAceitaTicket(item) && (
+                  <TouchableOpacity
+                    style={[
+                      styles.ticketButton,
+                      { backgroundColor: CORES_SENAI.azul_escuro },
+                      saldo < item.preco && styles.comprarButtonDisabled,
+                    ]}
+                    onPress={() => comprarTicketProduto(item)}
+                    disabled={saldo < item.preco || loadingTicket}
+                  >
+                    <Text style={styles.ticketText}>
+                      {loadingTicket ? '...' : 'Comprar Vale'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
@@ -322,6 +435,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  ticketsButton: {
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
   settingsButton: {
     padding: 12,
     borderRadius: 12,
@@ -332,6 +454,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   carrinhoIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  ticketsIcon: {
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -438,22 +564,16 @@ const styles = StyleSheet.create({
     color: '#5C6B8A',
     fontStyle: 'italic',
   },
+  ticketGratuitoInfo: {
+    fontSize: 12,
+    color: '#FF6B35',
+    fontWeight: '600',
+    marginTop: 4,
+  },
   botoesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
-  },
-  carrinhoAddButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flex: 1,
-  },
-  carrinhoAddText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 13,
-    textAlign: 'center',
+    gap: 8,
   },
   comprarButton: {
     paddingVertical: 10,
@@ -468,6 +588,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 13,
+    textAlign: 'center',
+  },
+  ticketGratuitoButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+  },
+  ticketButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1,
+  },
+  ticketText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 12,
     textAlign: 'center',
   },
 });
