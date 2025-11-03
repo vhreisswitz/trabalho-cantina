@@ -10,20 +10,22 @@ import {
   Image
 } from 'react-native';
 import { supabase } from '../services/database';
+import { useTheme } from '../ThemeContext'; // LINHA ADICIONADA
 
 export default function Home({ route, navigation }) {
+  const { isDarkMode } = useTheme(); // LINHA ADICIONADA
   const [produtos, setProdutos] = useState([]);
   const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
 
-  // Cores oficiais do SENAI
+  // Cores oficiais do SENAI - ALTERADAS para tema escuro
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
-    azul_claro: '#E6F0FF',
-    branco: '#FFFFFF',
+    azul_claro: isDarkMode ? '#1C1C1E' : '#E6F0FF', // ALTERADO
+    branco: isDarkMode ? '#1C1C1E' : '#FFFFFF', // ALTERADO
     laranja: '#FF6B35',
     cinza: '#5C6B8A'
   };
@@ -180,7 +182,7 @@ export default function Home({ route, navigation }) {
         <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
           🛍️ Produtos Disponíveis
         </Text>
-        <Text style={styles.sectionSubtitle}>
+        <Text style={[styles.sectionSubtitle, { color: isDarkMode ? '#98989F' : '#5C6B8A' }]}> {/* ALTERADO */}
           Cantina SENAI - Alimentação de qualidade
         </Text>
       </View>
@@ -207,7 +209,7 @@ export default function Home({ route, navigation }) {
                   R$ {item.preco.toFixed(2)}
                 </Text>
                 {item.descricao && (
-                  <Text style={styles.produtoDescricao}>{item.descricao}</Text>
+                  <Text style={[styles.produtoDescricao, { color: isDarkMode ? '#98989F' : '#5C6B8A' }]}>{item.descricao}</Text>
                 )}
               </View>
 
@@ -241,6 +243,7 @@ export default function Home({ route, navigation }) {
   );
 }
 
+// OS ESTILOS PERMANECEM EXATAMENTE IGUAIS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -390,7 +393,6 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#5C6B8A',
     textAlign: 'center',
   },
   loadingContainer: {
@@ -435,7 +437,6 @@ const styles = StyleSheet.create({
   },
   produtoDescricao: {
     fontSize: 13,
-    color: '#5C6B8A',
     fontStyle: 'italic',
   },
   botoesContainer: {

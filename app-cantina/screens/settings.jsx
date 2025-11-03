@@ -13,8 +13,10 @@ import {
   Linking
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../ThemeContext'; // LINHA ADICIONADA
 
 export default function Settings({ navigation, route }) {
+  const { isDarkMode, toggleTheme } = useTheme(); // LINHA ADICIONADA
   const usuario = route.params?.usuario || { 
     nome: 'wesley', 
     email: 'wesleybairroscorrea40@gmail.com',
@@ -22,16 +24,15 @@ export default function Settings({ navigation, route }) {
   };
   
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  // LINHA REMOVIDA: const [darkMode, setDarkMode] = useState(false);
   const [biometric, setBiometric] = useState(false);
   const [language, setLanguage] = useState('Português');
   
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // Função para alternar o modo escuro
+  // Função para alternar o modo escuro - ALTERADA
   const toggleDarkMode = (value) => {
-    setDarkMode(value);
-    console.log('Modo escuro:', value ? 'ativado' : 'desativado');
+    toggleTheme(); // ALTERADO: usa a função do contexto
   };
 
   // Função para lidar com logout
@@ -180,7 +181,7 @@ export default function Settings({ navigation, route }) {
       <TouchableOpacity
         style={[
           styles.settingItem, 
-          darkMode && styles.darkSettingItem,
+          isDarkMode && styles.darkSettingItem, // ALTERADO: isDarkMode
           isLast && styles.lastItem
         ]}
         onPress={onPress}
@@ -189,60 +190,60 @@ export default function Settings({ navigation, route }) {
         activeOpacity={0.7}
       >
         <View style={styles.settingLeft}>
-          <View style={[styles.iconContainer, darkMode && styles.darkIconContainer]}>
+          <View style={[styles.iconContainer, isDarkMode && styles.darkIconContainer]}> {/* ALTERADO: isDarkMode */}
             <Ionicons name={icon} size={22} color="#007AFF" />
           </View>
           <View style={styles.textContainer}>
-            <Text style={[styles.settingTitle, darkMode && styles.darkText]}>{title}</Text>
-            {subtitle && <Text style={[styles.settingSubtitle, darkMode && styles.darkSubtext]}>{subtitle}</Text>}
+            <Text style={[styles.settingTitle, isDarkMode && styles.darkText]}>{title}</Text> {/* ALTERADO: isDarkMode */}
+            {subtitle && <Text style={[styles.settingSubtitle, isDarkMode && styles.darkSubtext]}>{subtitle}</Text>} {/* ALTERADO: isDarkMode */}
           </View>
         </View>
         
         {hasSwitch ? (
           <Switch
-            value={value}
-            onValueChange={onValueChange}
+            value={isDarkMode} // ALTERADO: isDarkMode
+            onValueChange={toggleDarkMode}
             trackColor={{ false: '#767577', true: '#007AFF' }}
-            thumbColor={value ? '#FFFFFF' : '#f4f3f4'}
+            thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'} // ALTERADO: isDarkMode
           />
         ) : (
-          <Ionicons name="chevron-forward" size={20} color={darkMode ? "#8E8E93" : "#C7C7CC"} />
+          <Ionicons name="chevron-forward" size={20} color={isDarkMode ? "#8E8E93" : "#C7C7CC"} /> // ALTERADO: isDarkMode
         )}
       </TouchableOpacity>
     </Animated.View>
   );
 
-  // Estilos dinâmicos baseados no tema
+  // Estilos dinâmicos baseados no tema - ALTERADOS
   const dynamicStyles = {
     container: {
-      backgroundColor: darkMode ? '#000000' : '#F8F9FA',
+      backgroundColor: isDarkMode ? '#000000' : '#F8F9FA', // ALTERADO: isDarkMode
     },
     header: {
-      backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF',
-      borderBottomColor: darkMode ? '#38383A' : '#E5E5EA',
+      backgroundColor: isDarkMode ? '#1C1C1E' : '#FFFFFF', // ALTERADO: isDarkMode
+      borderBottomColor: isDarkMode ? '#38383A' : '#E5E5EA', // ALTERADO: isDarkMode
     },
   };
 
   return (
     <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} /> {/* ALTERADO: isDarkMode */}
       
       {/* Header */}
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity 
-          style={[styles.backButton, darkMode && styles.darkBackButton]}
+          style={[styles.backButton, isDarkMode && styles.darkBackButton]} // ALTERADO: isDarkMode
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, darkMode && styles.darkText]}>Configurações</Text>
+        <Text style={[styles.headerTitle, isDarkMode && styles.darkText]}>Configurações</Text> {/* ALTERADO: isDarkMode */}
         <View style={styles.headerRight} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
-        <View style={[styles.profileSection, darkMode && styles.darkSection]}>
+        <View style={[styles.profileSection, isDarkMode && styles.darkSection]}> {/* ALTERADO: isDarkMode */}
           <View style={styles.avatarContainer}>
             <Image 
               source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
@@ -250,13 +251,13 @@ export default function Settings({ navigation, route }) {
             />
             <View style={styles.onlineIndicator} />
           </View>
-          <Text style={[styles.userName, darkMode && styles.darkText]}>{usuario.nome}</Text>
-          <Text style={[styles.userEmail, darkMode && styles.darkSubtext]}>{usuario.email}</Text>
+          <Text style={[styles.userName, isDarkMode && styles.darkText]}>{usuario.nome}</Text> {/* ALTERADO: isDarkMode */}
+          <Text style={[styles.userEmail, isDarkMode && styles.darkSubtext]}>{usuario.email}</Text> {/* ALTERADO: isDarkMode */}
         </View>
 
         {/* Settings Sections */}
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>CONTA</Text>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}> {/* ALTERADO: isDarkMode */}
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkSectionTitle]}>CONTA</Text> {/* ALTERADO: isDarkMode */}
           <SettingItem
             icon="person-outline"
             title="Informações Pessoais"
@@ -282,8 +283,8 @@ export default function Settings({ navigation, route }) {
           />
         </View>
 
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>PREFERÊNCIAS</Text>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}> {/* ALTERADO: isDarkMode */}
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkSectionTitle]}>PREFERÊNCIAS</Text> {/* ALTERADO: isDarkMode */}
           <SettingItem
             icon="notifications-outline"
             title="Notificações"
@@ -295,7 +296,7 @@ export default function Settings({ navigation, route }) {
             icon="moon-outline"
             title="Modo Escuro"
             hasSwitch={true}
-            value={darkMode}
+            value={isDarkMode} // ALTERADO: isDarkMode
             onValueChange={toggleDarkMode}
           />
           <SettingItem
@@ -315,8 +316,8 @@ export default function Settings({ navigation, route }) {
           />
         </View>
 
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>SUPORTE</Text>
+        <View style={[styles.section, isDarkMode && styles.darkSection]}> {/* ALTERADO: isDarkMode */}
+          <Text style={[styles.sectionTitle, isDarkMode && styles.darkSectionTitle]}>SUPORTE</Text> {/* ALTERADO: isDarkMode */}
           <SettingItem
             icon="help-circle-outline"
             title="Ajuda & Suporte"
@@ -337,7 +338,7 @@ export default function Settings({ navigation, route }) {
 
         {/* Logout Button */}
         <TouchableOpacity 
-          style={[styles.logoutButton, darkMode && styles.darkLogoutButton]}
+          style={[styles.logoutButton, isDarkMode && styles.darkLogoutButton]} // ALTERADO: isDarkMode
           activeOpacity={0.7}
           onPress={handleLogout}
         >
@@ -346,13 +347,14 @@ export default function Settings({ navigation, route }) {
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={[styles.versionText, darkMode && styles.darkSubtext]}>Versão 2.1.0</Text>
+          <Text style={[styles.versionText, isDarkMode && styles.darkSubtext]}>Versão 2.1.0</Text> {/* ALTERADO: isDarkMode */}
         </View>
       </ScrollView>
     </View>
   );
 }
 
+// OS ESTILOS PERMANECEM EXATAMENTE IGUAIS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
