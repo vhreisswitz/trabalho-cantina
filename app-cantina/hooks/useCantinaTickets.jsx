@@ -140,78 +140,69 @@ const useCantinaTickets = () => {
     }
   };
 
-  const gerarTicketGratuito = async (produtoId, usuarioId) => {
+  const gerarTicketGratuito = async (produtoId) => {
     try {
-      setLoading(true);
-      console.log('🎫 Gerando ticket gratuito...');
-
-      const { data: produto, error: produtoError } = await supabase
-        .from('cantina_produtos')
-        .select('nome, preco, codigo')
-        .eq('id', produtoId)
-        .single();
-
-      if (produtoError) throw produtoError;
-
-      // Verificar se já tem ticket gratuito para ESTE produto
-      const { data: ticketExistente, error: verificaError } = await supabase
+      const hoje = new Date().toISOString().split('T')[0];
+      
+      // Verificar se já pegou ticket gratuito HOJE para este produto
+      const { data: ticketsHoje, error: erroConsulta } = await supabase
         .from('cantina_tickets')
-        .select('id')
-        .eq('produto_id', produtoId)
-        .eq('usuario_id', usuarioId.toString())
+        .select('*')
+        .eq('usuario_id', usuarioId) // ou userId, dependendo do seu estado
+        .eq('product_id', produtoId)
         .eq('gratuito', true)
-        .eq('status', 'ativo')
-        .single();
-
-      if (!verificaError && ticketExistente) {
-        Alert.alert('Aviso', 'Você já tem um ticket gratuito para este produto!');
-        return null;
+        .gte('created_at', hoje)
+        .limit(1);
+  
+      if (erroConsulta) {
+        console.error('Erro ao verificar tickets:', erroConsulta);
+        return;
       }
-
-      const ticketCode = `TKT-GRATIS-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`.toUpperCase();
-
-      const { data: ticket, error: ticketError } = await supabase
+  
+      if (ticketsHoje && ticketsHoje.length > 0) {
+        alert('Você já pegou seu ticket gratuito hoje para este produto!');
+        return;
+      }
+  
+      // Gerar código único para o ticket
+      const codigoTicket = 'TICKET-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  
+      // Inserir ticket gratuito
+      const { data, error } = await supabase
         .from('cantina_tickets')
         .insert([
           {
-            produto_id: produtoId,
-            usuario_id: usuarioId.toString(),
-            ticket_code: ticketCode,
-            gratuito: true,
+            product_id: produtoId,
+            usuario_id: usuarioId, // ajuste para o ID do usuário logado
+            ticket_code: codigoTicket,
+            qr_data: { 
+              codigo: codigoTicket,
+              produto_id: produtoId,
+              tipo: 'gratuito',
+              gerado_em: new Date().toISOString()
+            },
             status: 'ativo',
-            qr_data: {
-              ticketId: ticketCode,
-              produtoId: produtoId,
-              produtoNome: produto.nome,
-              produtoCodigo: produto.codigo,
-              usuarioId: usuarioId.toString(),
-              dataEmissao: new Date().toISOString(),
-              valor: 0,
-              tipo: 'gratuito'
-            }
+            gratuito: true, // IMPORTANTE: marcar como gratuito
+            utilizado_em: null
           }
         ])
-        .select(`
-          *,
-          cantina_produtos (
-            nome,
-            preco,
-            codigo
-          )
-        `)
-        .single();
-
-      if (ticketError) throw ticketError;
-
-      Alert.alert('🎫 Ticket Gratuito!', `Você ganhou um vale para: ${produto.nome}`);
-      return ticket;
-
+        .select();
+  
+      if (error) {
+        console.error('Erro ao inserir ticket:', error);
+        alert('Erro ao gerar ticket gratuito: ' + error.message);
+        return;
+      }
+  
+      console.log('Ticket gerado:', data);
+      alert('🎫 Ticket gratuito gerado com sucesso!');
+      
+      // Atualizar estado ou navegar para o ticket
+      // navigation.navigate('Ticket', { ticket: data[0] });
+      
     } catch (error) {
-      console.error('❌ Erro ao gerar ticket gratuito:', error);
-      Alert.alert('Erro', 'Falha ao gerar ticket gratuito');
-      return null;
-    } finally {
-      setLoading(false);
+      console.error('Erro inesperado:', error);
+      alert('Erro inesperado ao gerar ticket');
     }
   };
 
