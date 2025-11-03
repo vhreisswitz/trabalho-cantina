@@ -100,18 +100,6 @@ export default function Login() {
             </View>
 
 
-          {/* </TouchableOpacity> */}
-
-          {/* <TouchableOpacity 
-          style={[styles.aba, abaAtiva === 'verificar' && styles.abaAtiva]}
-          onPress={() => setAbaAtiva('verificar')}
-        >
-          <Text style={[styles.abaTexto, abaAtiva === 'verificar' && styles.abaTextoAtiva]}>
-            Verificar
-          </Text>
-        </TouchableOpacity> */}
-
-        {/* </View> */}
 
         {abaAtiva === 'login' ? (
           <View style={styles.loginContainer}>
