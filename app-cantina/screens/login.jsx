@@ -12,7 +12,310 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
 
+// Todo código comentado abaixo é da tela de verificação de usuário que foi incorporada à tela de login, usada somente para testes.
 
+/*
+const mockUsuarios = [
+{
+  id: '1',
+  nome: 'Victor Hugo',
+  matricula: '2023001',
+  created_at: new Date().toISOString()
+},
+{
+  id: '2', 
+  nome: 'Kauan',
+  matricula: '2023002',
+  created_at: new Date().toISOString()
+},
+{
+  id: '3', 
+  nome: 'Wesley',
+  matricula: '2023003',
+  created_at: new Date().toISOString()
+},
+];
+
+function VerificarUsuario({ isDarkMode }) {
+const [formData, setFormData] = useState({
+  nome: '',
+  matricula: ''
+});
+const [resultado, setResultado] = useState(null);
+const [carregando, setCarregando] = useState(false);
+const [modoOffline, setModoOffline] = useState(false);
+
+const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
+const validarMatricula = (matricula) => /^[0-9]{6,}$/.test(matricula);
+
+const handleInputChange = (name, value) => {
+  setFormData(prev => ({
+    ...prev,
+    [name]: value
+  }));
+};
+
+const testarConexao = async () => {
+  console.log('Testando conexão com Supabase...');
+  
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.log('Erro na conexão:', {
+        message: error.message,
+        code: error.code,
+        details: error.details
+      });
+      Alert.alert('Erro Conexão', 
+        `Code: ${error.code}\nMessage: ${error.message}`
+      );
+    } else {
+      console.log('Conexão OK! Dados:', data);
+      Alert.alert('Conexão OK', `Encontrados ${data?.length || 0} usuários`);
+    }
+  } catch (err) {
+    console.log('Erro geral:', err);
+    Alert.alert('Erro', err.message);
+  }
+};
+
+const testarConectividadeRede = async () => {
+  console.log('Testando conectividade de rede...');
+  
+  const testes = [
+    'https://google.com',
+    'https://github.com', 
+    'https://aoknqmjavdiwfxceehvs.supabase.co',
+    'https://aoknqmjavdiwfxceehvs.supabase.co/rest/v1/'
+  ];
+
+  let resultados = 'Resultados dos Testes de Rede:\n\n';
+
+  for (const url of testes) {
+    try {
+      const start = Date.now();
+      const response = await fetch(url, { method: 'HEAD' });
+      const tempo = Date.now() - start;
+      
+      console.log(`${url} - Status: ${response.status} (${tempo}ms)`);
+      resultados += `✅ ${url}\nStatus: ${response.status} (${tempo}ms)\n\n`;
+    } catch (error) {
+      console.log(`${url} - Erro: ${error.message}`);
+      resultados += `❌ ${url}\nErro: ${error.message}\n\n`;
+    }
+  }
+
+  Alert.alert('Teste de Rede', resultados);
+};
+
+const verificarUsuarioMock = async (formData) => {
+  console.log('Usando dados mock (modo offline)');
+  
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  const usuario = mockUsuarios.find(u => 
+    u.matricula === formData.matricula && 
+    u.nome.toLowerCase().includes(formData.nome.toLowerCase())
+  );
+  
+  return usuario ? { data: [usuario], error: null } : { data: [], error: null };
+};
+
+async function verificarUsuario() {
+  if (!formData.nome || !formData.matricula) {
+    Alert.alert('Erro', 'Por favor, preencha nome e matrícula!');
+    return;
+  }
+
+  if (!validarNome(formData.nome) || !validarMatricula(formData.matricula)) {
+    Alert.alert('Erro', 'Por favor, verifique os campos!');
+    return;
+  }
+
+  setCarregando(true);
+  setResultado(null);
+
+  try {
+    console.log('Iniciando consulta...', formData);
+    console.log('Modo:', modoOffline ? 'OFFLINE' : 'ONLINE');
+
+    let data, error;
+
+    if (modoOffline) {
+      const result = await verificarUsuarioMock(formData);
+      data = result.data;
+      error = result.error;
+    } else {
+      const result = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('matricula', formData.matricula)
+        .ilike('nome', `%${formData.nome}%`);
+      data = result.data;
+      error = result.error;
+    }
+
+    console.log('Resposta completa:', { data, error });
+
+    if (error) {
+      console.log('Detalhes do erro:', error);
+      
+      setResultado({
+        status: 'ERRO',
+        mensagem: `Erro: ${error.code || 'ERRO'} - ${error.message}`,
+        usuario: null
+      });
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const usuarioEncontrado = data[0];
+      console.log('Usuário encontrado:', usuarioEncontrado);
+      
+      setResultado({
+        status: 'ENCONTRADO',
+        mensagem: `✅ Usuário encontrado com sucesso! ${modoOffline ? '(Modo Offline)' : ''}`,
+        usuario: {
+          id: usuarioEncontrado.id,
+          nome: usuarioEncontrado.nome,
+          matricula: usuarioEncontrado.matricula,
+          senha: '••••••',
+          criado_em: usuarioEncontrado.created_at || usuarioEncontrado.criado_em || new Date().toISOString()
+        }
+      });
+    } else {
+      console.log('Nenhum usuário encontrado');
+      setResultado({
+        status: 'NAO_ENCONTRADO',
+        mensagem: `❌ Usuário não encontrado! ${modoOffline ? '(Modo Offline)' : ''}`,
+        usuario: null
+      });
+    }
+
+  } catch (err) {
+    console.error('Erro inesperado:', err);
+    setResultado({
+      status: 'ERRO',
+      mensagem: `Erro interno: ${err.message}`,
+      usuario: null
+    });
+  } finally {
+    setCarregando(false);
+  }
+}
+
+const limparVerificacao = () => {
+  setFormData({ nome: '', matricula: '' });
+  setResultado(null);
+};
+
+return (
+  <View style={[styles.verificacaoContainer, isDarkMode && styles.darkVerificacaoContainer]}>
+    <Text style={[styles.verificacaoTitle, isDarkMode && styles.darkText]}>
+      🔍 Verificar Usuário
+    </Text>
+
+    <View style={styles.modoContainer}>
+      <Text style={[styles.modoTexto, isDarkMode && styles.darkText]}>
+        Modo: {modoOffline ? '🔧 Offline (Mock)' : '🌐 Online (Supabase)'}
+      </Text>
+      <TouchableOpacity 
+        style={[styles.button, {backgroundColor: modoOffline ? '#ffa500' : '#007AFF', padding: 8}]}
+        onPress={() => setModoOffline(!modoOffline)}
+      >
+        <Text style={[styles.buttonText, {fontSize: 12}]}>
+          {modoOffline ? '🔄 Tentar Conexão Real' : '🔧 Usar Dados Mock'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    <TextInput
+      style={[styles.input, isDarkMode && styles.darkInput]}
+      placeholder="Nome para verificar"
+      placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+      value={formData.nome}
+      onChangeText={(value) => handleInputChange('nome', value)}
+    />
+
+    <TextInput
+      style={[styles.input, isDarkMode && styles.darkInput]}
+      placeholder="Matrícula para verificar"
+      placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+      keyboardType="numeric"
+      value={formData.matricula}
+      onChangeText={(value) => handleInputChange('matricula', value)}
+    />
+
+    <View style={styles.verificacaoBotoes}>
+      <TouchableOpacity 
+        style={[styles.button, styles.verificarButton, carregando && styles.buttonDisabled]} 
+        onPress={verificarUsuario}
+        disabled={carregando}
+      >
+        <Text style={styles.buttonText}>
+          {carregando ? '🔎 Verificando...' : '📋 Verificar Usuário'}
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.button, styles.limparButton, carregando && styles.buttonDisabled]} 
+        onPress={limparVerificacao}
+        disabled={carregando}
+      >
+        <Text style={styles.buttonText}>🔄 Limpar</Text>
+      </TouchableOpacity>
+    </View>
+
+    <TouchableOpacity 
+      style={[styles.button, {backgroundColor: 'orange', marginTop: 10}]} 
+      onPress={testarConexao}
+    >
+      <Text style={styles.buttonText}>Testar Conexão Supabase</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity 
+      style={[styles.button, {backgroundColor: 'purple', marginTop: 10}]} 
+      onPress={testarConectividadeRede}
+    >
+      <Text style={styles.buttonText}>Testar Conectividade de Rede</Text>
+    </TouchableOpacity>
+
+    {resultado && (
+      <View style={[
+        styles.resultadoContainer,
+        resultado.status === 'ENCONTRADO' && styles.resultadoSucesso,
+        resultado.status === 'NAO_ENCONTRADO' && styles.resultadoErro,
+        resultado.status === 'ERRO' && styles.resultadoAlerta,
+      ]}>
+        <Text style={styles.resultadoMensagem}>{resultado.mensagem}</Text>
+        
+        {resultado.usuario && (
+          <View style={styles.detalhesUsuario}>
+            <Text style={styles.detalhesTexto}>
+              <Text style={styles.detalhesLabel}>ID:</Text> {resultado.usuario.id}
+            </Text>
+            <Text style={styles.detalhesTexto}>
+              <Text style={styles.detalhesLabel}>Nome:</Text> {resultado.usuario.nome}
+            </Text>
+            <Text style={styles.detalhesTexto}>
+              <Text style={styles.detalhesLabel}>Matrícula:</Text> {resultado.usuario.matricula}
+            </Text>
+            <Text style={styles.detalhesTexto}>
+              <Text style={styles.detalhesLabel}>Cadastrado em:</Text> {' '}
+              {new Date(resultado.usuario.criado_em).toLocaleString('pt-BR')}
+            </Text>
+          </View>
+        )}
+      </View>
+    )}
+  </View>
+);
+}
+*/
 
 export default function Login() {
   const navigation = useNavigation();
