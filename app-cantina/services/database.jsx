@@ -335,3 +335,21 @@ export const getCompras = async (usuarioId) => {
     throw error;
   }
 };
+export const criarTicketGratis = async (usuarioId) => {
+  try {
+    const { data, error } = await supabase
+      .from('cantina_tickets')
+      .insert({
+        usuario_id: usuarioId,
+        tipo: 'boas-vindas',
+        valor: 0,
+        status: 'disponível',
+        criado_em: new Date().toISOString(),
+      });
+    if (error) throw error;
+    return data?.[0] || null;
+  } catch (error) {
+    console.error('Erro inesperado ao criar ticket grátis:', error);
+    throw error;
+  }
+};
