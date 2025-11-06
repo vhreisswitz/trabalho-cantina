@@ -147,7 +147,7 @@ export default function MeusTickets({ route, navigation }) {
             style={[styles.botao, styles.botaoVer]}
             onPress={() => verTicket(item)}
           >
-            <Text style={styles.botaoTexto}>👀 Ver QR</Text>
+            <Text style={styles.botaoTexto}>Ver QR</Text>
           </TouchableOpacity>
           
           {item.status === 'ativo' && (
@@ -155,7 +155,7 @@ export default function MeusTickets({ route, navigation }) {
               style={[styles.botao, styles.botaoCompartilhar]}
               onPress={() => compartilharTicket(item)}
             >
-              <Text style={styles.botaoTexto}>📤 Código</Text>
+              <Text style={styles.botaoTexto}>Código</Text>
             </TouchableOpacity>
           )}
         </View>
