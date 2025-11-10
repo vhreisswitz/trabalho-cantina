@@ -42,7 +42,7 @@ export default function Home({ route, navigation }) {
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
       
-      // ✅ INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
+      //  INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
       console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
       inicializarTicketBoasVindas(route.params.usuario.id);
     } else {
@@ -237,7 +237,7 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-      {/* BOTÕES CENTRALIZADOS */}
+      
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
           style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
