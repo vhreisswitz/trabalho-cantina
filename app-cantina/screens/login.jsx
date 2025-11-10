@@ -131,18 +131,7 @@ export default function Login() {
   return (
     <View style={[styles.container, isDarkMode ? styles.darkGradientBackground : styles.lightGradientBackground]}>
       <ScrollView style={styles.scrollView}>
-        {/* Exemplo de switch de tema, inativo */}
-        {/* <View style={styles.switchContainer}>
-          <Text style={[styles.switchLabel, isDarkMode && styles.darkText]}>
-            {isDarkMode ? '🌙 Modo Escuro' : '☀️ Modo Claro'}
-          </Text>
-          <Switch
-            value={isDarkMode}
-            onValueChange={() => setIsDarkMode((prev) => !prev)}
-            thumbColor={isDarkMode ? '#fff' : '#007AFF'}
-            trackColor={{ false: '#ccc', true: '#4F46E5' }}
-          />
-        </View> */}
+        
 
         <View style={[styles.tituloContainer]}>
           <Text style={[styles.tituloLogin]}>
