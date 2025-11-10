@@ -5,7 +5,7 @@ import { supabase } from '../services/database';
 const useCantinaTickets = () => {
   const [loading, setLoading] = useState(false);
 
-  // Inicializa ticket de boas-vindas para o usuário, se ainda não existir
+  // Inicializa ticket de boas-vindas para o usuário
   const inicializarTicketBoasVindas = async (usuarioId) => {
     try {
       // Buscar produto elegível para ticket de boas-vindas
