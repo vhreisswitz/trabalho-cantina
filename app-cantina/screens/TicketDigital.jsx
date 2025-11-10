@@ -8,10 +8,12 @@ import {
   ScrollView
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import useCantinaTickets from '../hooks/useCantinaTickets';
 
 export default function TicketDigital({ route, navigation }) {
   const { ticket, usuario } = route.params;
   const produto = ticket.cantina_produtos;
+  const { utilizarTicket } = useCantinaTickets(); // <-- Importa a função de utilização
 
   const CORES_SENAI = {
     azul_principal: '#005CA9',
@@ -19,15 +21,34 @@ export default function TicketDigital({ route, navigation }) {
     azul_claro: '#E6F0FF',
     branco: '#FFFFFF',
     laranja: '#FF6B35',
-    verde: '#34C759'
+    verde: '#34C759',
+    cinza: '#5C6B8A' // Corrigido para o status utilizado
   };
 
+  // Função para compartilhar código
   const compartilharTicket = () => {
     Alert.alert(
       'Código do Ticket',
       `🎫 ${produto?.nome}\n📋 Código: ${ticket.ticket_code}\n💰 ${ticket.gratuito ? 'GRATUITO' : `R$ ${produto?.preco}`}\n📅 Emitido: ${new Date(ticket.created_at).toLocaleDateString('pt-BR')}`,
       [{ text: 'OK' }]
     );
+  };
+
+  // FUNÇÃO DE USAR TICKET
+  const handleUsarTicket = async () => {
+    try {
+      // Chama função para usar (atualizar) o ticket
+      const resultado = await utilizarTicket(ticket.qr_data);
+      if (resultado?.sucesso) {
+        Alert.alert('Ticket utilizado!', resultado.mensagem, [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+      } else {
+        Alert.alert('Erro ao utilizar', resultado?.mensagem || 'Falha desconhecida');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível utilizar o ticket');
+    }
   };
 
   return (
@@ -147,6 +168,17 @@ export default function TicketDigital({ route, navigation }) {
           >
             <Text style={styles.botaoTexto}>Ver Todos os Tickets</Text>
           </TouchableOpacity>
+          
+          {/* BOTÃO USAR TICKET - aparece só se ativo */}
+          {ticket.status === 'ativo' && (
+            <TouchableOpacity
+              style={[styles.botao, { backgroundColor: CORES_SENAI.verde }]}
+              onPress={handleUsarTicket}
+            >
+              <Text style={styles.botaoTexto}>Usar Ticket</Text>
+            </TouchableOpacity>
+          )}
+          
         </View>
       </ScrollView>
     </View>
@@ -298,6 +330,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 8,
   },
   botaoTexto: {
     color: '#FFFFFF',
