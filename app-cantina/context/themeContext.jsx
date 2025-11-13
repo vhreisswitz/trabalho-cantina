@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance } from 'react-native';
 
+// Criando o contexto
 const ThemeContext = createContext();
 
+// Hook personalizado para usar o contexto
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
@@ -11,34 +13,34 @@ export const useTheme = () => {
   return context;
 };
 
+// Provedor do contexto
 export const ThemeProvider = ({ children }) => {
   const colorScheme = Appearance.getColorScheme();
-  const [theme, setTheme] = useState(colorScheme || 'light');
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Debug para verificar se o tema está mudando
+  // Debug
   useEffect(() => {
-    console.log('Tema alterado para:', theme);
-  }, [theme]);
+    console.log('Tema atual:', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
+  // Função para alternar o tema - CORRIGIDA
   const toggleTheme = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      console.log('Alternando tema:', prevTheme, '->', newTheme);
-      return newTheme;
-    });
+    setDarkMode(prev => !prev);
   };
 
-  const setSpecificTheme = (newTheme) => {
-    if (['light', 'dark'].includes(newTheme)) {
-      setTheme(newTheme);
-    }
+  // Função para definir tema específico - CORRIGIDA
+  const setTheme = (value) => {
+    setDarkMode(value);
   };
 
+  // Valor do contexto - CORRIGIDO
   const value = {
-    theme,
+    darkMode,
+    setDarkMode,
     toggleTheme,
-    setTheme: setSpecificTheme,
-    isDark: theme === 'dark'
+    setTheme,
+    isDark: darkMode, // Para compatibilidade
+    theme: darkMode ? 'dark' : 'light' // Para compatibilidade
   };
 
   return (

@@ -8,13 +8,16 @@ import {
   Switch,
   ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
+import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function Login() {
   const navigation = useNavigation();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { darkMode } = useTheme(); // Use o contexto
+  
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [errors, setErrors] = useState({});
@@ -128,45 +131,53 @@ export default function Login() {
     }
   };
 
-  return (
-    <View style={[styles.container, isDarkMode ? styles.darkGradientBackground : styles.lightGradientBackground]}>
-      <ScrollView style={styles.scrollView}>
-        {/* Exemplo de switch de tema, inativo */}
-        {/* <View style={styles.switchContainer}>
-          <Text style={[styles.switchLabel, isDarkMode && styles.darkText]}>
-            {isDarkMode ? '🌙 Modo Escuro' : '☀️ Modo Claro'}
-          </Text>
-          <Switch
-            value={isDarkMode}
-            onValueChange={() => setIsDarkMode((prev) => !prev)}
-            thumbColor={isDarkMode ? '#fff' : '#007AFF'}
-            trackColor={{ false: '#ccc', true: '#4F46E5' }}
-          />
-        </View> */}
+  // Estilos dinâmicos baseados no tema
+  const dynamicStyles = {
+    container: {
+      backgroundColor: darkMode ? '#1E3A8A' : '#3B82F6',
+    },
+    text: {
+      color: darkMode ? '#FFFFFF' : '#FFFFFF',
+    },
+    input: {
+      backgroundColor: darkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255,255,255,0.9)',
+      borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.3)',
+      color: darkMode ? '#FFFFFF' : '#000000',
+    },
+    placeholder: {
+      color: darkMode ? '#aaa' : '#666',
+    }
+  };
 
-        <View style={[styles.tituloContainer]}>
-          <Text style={[styles.tituloLogin]}>
+  return (
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle="light-content" />
+      
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.tituloContainer}>
+          <Text style={[styles.tituloLogin, dynamicStyles.text]}>
             Login
           </Text>
         </View>
 
         <View style={styles.loginContainer}>
-          <Text style={[styles.title, isDarkMode && styles.darkText]}>
+          <Text style={[styles.title, dynamicStyles.text]}>
             Sistema de Acesso
           </Text>
+          
           <TextInput
-            style={[styles.input, isDarkMode && styles.darkInput]}
+            style={[styles.input, dynamicStyles.input]}
             placeholder="Nome"
-            placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+            placeholderTextColor={dynamicStyles.placeholder.color}
             value={nome}
             onChangeText={setNome}
           />
           {errors.nome && <Text style={styles.error}>{errors.nome}</Text>}
 
           <TextInput
-            style={[styles.input, isDarkMode && styles.darkInput]}
+            style={[styles.input, dynamicStyles.input]}
             placeholder="Matrícula"
-            placeholderTextColor={isDarkMode ? '#aaa' : '#666'}
+            placeholderTextColor={dynamicStyles.placeholder.color}
             keyboardType="numeric"
             value={matricula}
             onChangeText={setMatricula}
@@ -178,12 +189,20 @@ export default function Login() {
             <Text style={styles.infoTicket}>Resgatando vale gratuito...</Text>
           )}
 
-          <TouchableOpacity style={[styles.button, styles.primaryButton]} onPress={handleCadastrar} disabled={criandoTicket}>
-            <Text style={styles.buttonText}> Entrar no Sistema</Text>
+          <TouchableOpacity 
+            style={[styles.button, styles.primaryButton]} 
+            onPress={handleCadastrar} 
+            disabled={criandoTicket}
+          >
+            <Text style={styles.buttonText}>Entrar no Sistema</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.secondaryButton]} onPress={limparCampos} disabled={criandoTicket}>
-            <Text style={styles.buttonText}> Limpar Campos</Text>
+          <TouchableOpacity 
+            style={[styles.button, styles.secondaryButton]} 
+            onPress={limparCampos} 
+            disabled={criandoTicket}
+          >
+            <Text style={styles.buttonText}>Limpar Campos</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -195,12 +214,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  lightGradientBackground: {
-    backgroundColor: '#3B82F6',
-  },
-  darkGradientBackground: {
-    backgroundColor: '#1E3A8A',
-  },
   scrollView: {
     flex: 1,
     padding: 24,
@@ -208,11 +221,11 @@ const styles = StyleSheet.create({
   tituloContainer: {
     alignItems: 'center',
     marginBottom: 30,
+    marginTop: 60,
   },
   tituloLogin: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 1, height: 1 },
@@ -225,7 +238,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     marginBottom: 30,
     textAlign: 'center',
-    color: '#fff',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 1, height: 1 },
@@ -233,12 +245,10 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 56,
-    borderColor: 'rgba(255,255,255,0.3)',
     borderWidth: 2,
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
     fontSize: 16,
     fontWeight: '500',
     shadowColor: '#000',
@@ -246,11 +256,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  darkInput: {
-    backgroundColor: 'rgba(30, 30, 30, 0.9)',
-    borderColor: 'rgba(255,255,255,0.2)',
-    color: '#fff',
   },
   error: {
     color: '#FF6B6B',
