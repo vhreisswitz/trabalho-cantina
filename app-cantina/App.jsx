@@ -77,13 +77,6 @@ export default function App() {
             }}
           />
           <Stack.Screen
-            name="Perfil"
-            component={Perfil}
-            options={{
-              animation: 'slide_from_right', // Transição padrão para perfil
-            }}
-          />
-          <Stack.Screen
             name='Extrato'
             component={Extrato}
             options={{
