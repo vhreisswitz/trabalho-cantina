@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image
+  Image,
+  StatusBar
 } from 'react-native';
 import { supabase } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
+import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
@@ -18,6 +20,9 @@ export default function Home({ route, navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
+
+  // Use o contexto do tema
+  const { darkMode } = useTheme();
 
   // Hook para tickets
   const { 
@@ -27,14 +32,16 @@ export default function Home({ route, navigation }) {
     loading: loadingTicket 
   } = useCantinaTickets();
 
-  // Cores oficiais do SENAI
+  // Cores oficiais do SENAI com suporte a tema escuro
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
-    azul_claro: '#E6F0FF',
-    branco: '#FFFFFF',
+    azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
+    branco: darkMode ? '#1E293B' : '#FFFFFF',
     laranja: '#FF6B35',
-    cinza: '#5C6B8A'
+    cinza: darkMode ? '#94A3B8' : '#5C6B8A',
+    texto: darkMode ? '#FFFFFF' : '#000000',
+    texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A'
   };
 
   useEffect(() => {
@@ -185,10 +192,28 @@ export default function Home({ route, navigation }) {
     return produto.codigo?.startsWith('P00');
   }
 
+  // Estilos dinâmicos baseados no tema
+  const dynamicStyles = {
+    container: {
+      backgroundColor: CORES_SENAI.azul_claro,
+    },
+    header: {
+      backgroundColor: CORES_SENAI.azul_principal,
+    },
+    text: {
+      color: CORES_SENAI.texto,
+    },
+    textSecundario: {
+      color: CORES_SENAI.texto_secundario,
+    }
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+      
       {/* HEADER COM IDENTIDADE VISUAL DO SENAI */}
-      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoSenai}>SENAI</Text>
@@ -260,7 +285,7 @@ export default function Home({ route, navigation }) {
         <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
           🛍️ Produtos Disponíveis
         </Text>
-        <Text style={styles.sectionSubtitle}>
+        <Text style={[styles.sectionSubtitle, { color: CORES_SENAI.texto_secundario }]}>
           Cantina SENAI - Alimentação de qualidade
         </Text>
       </View>
@@ -280,14 +305,16 @@ export default function Home({ route, navigation }) {
           renderItem={({ item }) => (
             <View style={[styles.produtoCard, { backgroundColor: CORES_SENAI.branco }]}>
               <View style={styles.produtoInfo}>
-                <Text style={[styles.produtoNome, { color: CORES_SENAI.azul_escuro }]}>
+                <Text style={[styles.produtoNome, { color: CORES_SENAI.texto }]}>
                   {item.nome}
                 </Text>
                 <Text style={[styles.produtoPreco, { color: CORES_SENAI.azul_principal }]}>
                   R$ {item.preco.toFixed(2)}
                 </Text>
                 {item.descricao && (
-                  <Text style={styles.produtoDescricao}>{item.descricao}</Text>
+                  <Text style={[styles.produtoDescricao, { color: CORES_SENAI.texto_secundario }]}>
+                    {item.descricao}
+                  </Text>
                 )}
                 
                 {/* INDICADOR DE TICKET GRATUITO */}
@@ -512,7 +539,6 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#5C6B8A',
     textAlign: 'center',
   },
   loadingContainer: {
@@ -557,7 +583,6 @@ const styles = StyleSheet.create({
   },
   produtoDescricao: {
     fontSize: 13,
-    color: '#5C6B8A',
     fontStyle: 'italic',
   },
   ticketGratuitoInfo: {

@@ -5,24 +5,34 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ScrollView
+  ScrollView,
+  StatusBar
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import useCantinaTickets from '../hooks/useCantinaTickets';
+import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function TicketDigital({ route, navigation }) {
   const { ticket, usuario } = route.params;
   const produto = ticket.cantina_produtos;
-  const { utilizarTicket } = useCantinaTickets(); // <-- Importa a função de utilização
+  const { utilizarTicket } = useCantinaTickets();
 
+  // Use o contexto do tema
+  const { darkMode } = useTheme();
+
+  // Cores do SENAI com suporte a tema escuro
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
-    azul_claro: '#E6F0FF',
-    branco: '#FFFFFF',
+    azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
+    branco: darkMode ? '#1E293B' : '#FFFFFF',
     laranja: '#FF6B35',
     verde: '#34C759',
-    cinza: '#5C6B8A' // Corrigido para o status utilizado
+    cinza: darkMode ? '#94A3B8' : '#5C6B8A',
+    texto: darkMode ? '#FFFFFF' : '#000000',
+    texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A',
+    card: darkMode ? '#334155' : '#FFFFFF',
+    borda: darkMode ? '#475569' : '#E0E0E0'
   };
 
   // Função para compartilhar código
@@ -51,10 +61,31 @@ export default function TicketDigital({ route, navigation }) {
     }
   };
 
+  // Estilos dinâmicos
+  const dynamicStyles = {
+    container: {
+      backgroundColor: CORES_SENAI.azul_claro,
+    },
+    header: {
+      backgroundColor: CORES_SENAI.azul_principal,
+    },
+    ticketCard: {
+      backgroundColor: CORES_SENAI.branco,
+    },
+    texto: {
+      color: CORES_SENAI.texto,
+    },
+    textoSecundario: {
+      color: CORES_SENAI.texto_secundario,
+    }
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+      
       {/* HEADER */}
-      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.botaoVoltar}>← Voltar</Text>
         </TouchableOpacity>
@@ -66,7 +97,7 @@ export default function TicketDigital({ route, navigation }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* CARTÃO DO TICKET */}
-        <View style={[styles.ticketCard, { backgroundColor: CORES_SENAI.branco }]}>
+        <View style={[styles.ticketCard, dynamicStyles.ticketCard]}>
           
           {/* CABEÇALHO COM LOGO SENAI */}
           <View style={[styles.ticketHeader, { backgroundColor: CORES_SENAI.azul_principal }]}>
@@ -96,21 +127,21 @@ export default function TicketDigital({ route, navigation }) {
             </Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tipo:</Text>
-              <Text style={styles.infoValue}>
+              <Text style={[styles.infoLabel, { color: CORES_SENAI.texto_secundario }]}>Tipo:</Text>
+              <Text style={[styles.infoValue, dynamicStyles.texto]}>
                 {ticket.gratuito ? '🎁 GRATUITO' : '💰 PAGO'}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Valor:</Text>
-              <Text style={styles.infoValue}>
+              <Text style={[styles.infoLabel, { color: CORES_SENAI.texto_secundario }]}>Valor:</Text>
+              <Text style={[styles.infoValue, dynamicStyles.texto]}>
                 {ticket.gratuito ? 'GRATUITO' : `R$ ${produto?.preco}`}
               </Text>
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status:</Text>
+              <Text style={[styles.infoLabel, { color: CORES_SENAI.texto_secundario }]}>Status:</Text>
               <Text style={[
                 styles.infoValue, 
                 { color: ticket.status === 'ativo' ? CORES_SENAI.verde : CORES_SENAI.cinza }
@@ -120,16 +151,16 @@ export default function TicketDigital({ route, navigation }) {
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Emitido em:</Text>
-              <Text style={styles.infoValue}>
+              <Text style={[styles.infoLabel, { color: CORES_SENAI.texto_secundario }]}>Emitido em:</Text>
+              <Text style={[styles.infoValue, dynamicStyles.texto]}>
                 {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
               </Text>
             </View>
 
             {ticket.utilizado_em && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Utilizado em:</Text>
-                <Text style={styles.infoValue}>
+                <Text style={[styles.infoLabel, { color: CORES_SENAI.texto_secundario }]}>Utilizado em:</Text>
+                <Text style={[styles.infoValue, dynamicStyles.texto]}>
                   {new Date(ticket.utilizado_em).toLocaleDateString('pt-BR')}
                 </Text>
               </View>
@@ -137,8 +168,12 @@ export default function TicketDigital({ route, navigation }) {
 
             {/* MENSAGEM ESPECIAL PARA TICKET DE BOAS-VINDAS */}
             {ticket.qr_data?.tipo === 'boas_vindas' && (
-              <View style={[styles.mensagemPresente, { backgroundColor: '#FFF3E0' }]}>
-                <Text style={[styles.mensagemTexto, { color: '#E65100' }]}>
+              <View style={[styles.mensagemPresente, { 
+                backgroundColor: darkMode ? '#4A1E0F' : '#FFF3E0' 
+              }]}>
+                <Text style={[styles.mensagemTexto, { 
+                  color: darkMode ? '#FFB74D' : '#E65100' 
+                }]}>
                   🎉 {ticket.qr_data?.mensagem || 'Presente de boas-vindas!'}
                 </Text>
               </View>
@@ -146,8 +181,11 @@ export default function TicketDigital({ route, navigation }) {
           </View>
 
           {/* RODAPÉ */}
-          <View style={[styles.ticketFooter, { backgroundColor: CORES_SENAI.azul_claro }]}>
-            <Text style={styles.rodapeTexto}>
+          <View style={[styles.ticketFooter, { 
+            backgroundColor: darkMode ? '#1E293B' : CORES_SENAI.azul_claro,
+            borderTopColor: CORES_SENAI.borda
+          }]}>
+            <Text style={[styles.rodapeTexto, { color: CORES_SENAI.texto_secundario }]}>
               Apresente este QR Code na cantina para resgatar seu produto
             </Text>
           </View>
@@ -178,7 +216,6 @@ export default function TicketDigital({ route, navigation }) {
               <Text style={styles.botaoTexto}>Usar Ticket</Text>
             </TouchableOpacity>
           )}
-          
         </View>
       </ScrollView>
     </View>
@@ -282,13 +319,11 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#5C6B8A',
     fontWeight: '500',
     flex: 1,
   },
   infoValue: {
     fontSize: 14,
-    color: '#003A6B',
     fontWeight: '600',
     flex: 1,
     textAlign: 'right',
@@ -308,11 +343,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   rodapeTexto: {
     fontSize: 12,
-    color: '#5C6B8A',
     textAlign: 'center',
     fontStyle: 'italic',
   },
