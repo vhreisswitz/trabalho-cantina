@@ -13,6 +13,7 @@ import {
   Linking
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/themeContext'; // Importe o hook useTheme
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -22,15 +23,21 @@ export default function Settings({ navigation, route }) {
   };
   
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [biometric, setBiometric] = useState(false);
   const [language, setLanguage] = useState('Português');
   
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // Função para alternar o modo escuro
+  // Use o hook useTheme para acessar o contexto
+  const { theme, toggleTheme, isDark } = useTheme();
+
+  // Função para alternar o modo escuro usando o contexto
   const toggleDarkMode = (value) => {
-    setDarkMode(value);
+    if (value) {
+      toggleTheme('dark');
+    } else {
+      toggleTheme('light');
+    }
     console.log('Modo escuro:', value ? 'ativado' : 'desativado');
   };
 
@@ -180,7 +187,7 @@ export default function Settings({ navigation, route }) {
       <TouchableOpacity
         style={[
           styles.settingItem, 
-          darkMode && styles.darkSettingItem,
+          isDark && styles.darkSettingItem,
           isLast && styles.lastItem
         ]}
         onPress={onPress}
@@ -189,12 +196,12 @@ export default function Settings({ navigation, route }) {
         activeOpacity={0.7}
       >
         <View style={styles.settingLeft}>
-          <View style={[styles.iconContainer, darkMode && styles.darkIconContainer]}>
+          <View style={[styles.iconContainer, isDark && styles.darkIconContainer]}>
             <Ionicons name={icon} size={22} color="#007AFF" />
           </View>
           <View style={styles.textContainer}>
-            <Text style={[styles.settingTitle, darkMode && styles.darkText]}>{title}</Text>
-            {subtitle && <Text style={[styles.settingSubtitle, darkMode && styles.darkSubtext]}>{subtitle}</Text>}
+            <Text style={[styles.settingTitle, isDark && styles.darkText]}>{title}</Text>
+            {subtitle && <Text style={[styles.settingSubtitle, isDark && styles.darkSubtext]}>{subtitle}</Text>}
           </View>
         </View>
         
@@ -206,7 +213,7 @@ export default function Settings({ navigation, route }) {
             thumbColor={value ? '#FFFFFF' : '#f4f3f4'}
           />
         ) : (
-          <Ionicons name="chevron-forward" size={20} color={darkMode ? "#8E8E93" : "#C7C7CC"} />
+          <Ionicons name="chevron-forward" size={20} color={isDark ? "#8E8E93" : "#C7C7CC"} />
         )}
       </TouchableOpacity>
     </Animated.View>
@@ -215,34 +222,34 @@ export default function Settings({ navigation, route }) {
   // Estilos dinâmicos baseados no tema
   const dynamicStyles = {
     container: {
-      backgroundColor: darkMode ? '#000000' : '#F8F9FA',
+      backgroundColor: isDark ? '#000000' : '#F8F9FA',
     },
     header: {
-      backgroundColor: darkMode ? '#1C1C1E' : '#FFFFFF',
-      borderBottomColor: darkMode ? '#38383A' : '#E5E5EA',
+      backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+      borderBottomColor: isDark ? '#38383A' : '#E5E5EA',
     },
   };
 
   return (
     <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       
       {/* Header */}
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity 
-          style={[styles.backButton, darkMode && styles.darkBackButton]}
+          style={[styles.backButton, isDark && styles.darkBackButton]}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, darkMode && styles.darkText]}>Configurações</Text>
+        <Text style={[styles.headerTitle, isDark && styles.darkText]}>Configurações</Text>
         <View style={styles.headerRight} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
-        <View style={[styles.profileSection, darkMode && styles.darkSection]}>
+        <View style={[styles.profileSection, isDark && styles.darkSection]}>
           <View style={styles.avatarContainer}>
             <Image 
               source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
@@ -250,13 +257,13 @@ export default function Settings({ navigation, route }) {
             />
             <View style={styles.onlineIndicator} />
           </View>
-          <Text style={[styles.userName, darkMode && styles.darkText]}>{usuario.nome}</Text>
-          <Text style={[styles.userEmail, darkMode && styles.darkSubtext]}>{usuario.email}</Text>
+          <Text style={[styles.userName, isDark && styles.darkText]}>{usuario.nome}</Text>
+          <Text style={[styles.userEmail, isDark && styles.darkSubtext]}>{usuario.email}</Text>
         </View>
 
         {/* Settings Sections */}
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>CONTA</Text>
+        <View style={[styles.section, isDark && styles.darkSection]}>
+          <Text style={[styles.sectionTitle, isDark && styles.darkSectionTitle]}>CONTA</Text>
           <SettingItem
             icon="person-outline"
             title="Informações Pessoais"
@@ -282,8 +289,8 @@ export default function Settings({ navigation, route }) {
           />
         </View>
 
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>PREFERÊNCIAS</Text>
+        <View style={[styles.section, isDark && styles.darkSection]}>
+          <Text style={[styles.sectionTitle, isDark && styles.darkSectionTitle]}>PREFERÊNCIAS</Text>
           <SettingItem
             icon="notifications-outline"
             title="Notificações"
@@ -295,8 +302,8 @@ export default function Settings({ navigation, route }) {
             icon="moon-outline"
             title="Modo Escuro"
             hasSwitch={true}
-            value={darkMode}
-            onValueChange={toggleDarkMode}
+            value={isDark} // Usa o valor do contexto
+            onValueChange={toggleDarkMode} // Usa a função do contexto
           />
           <SettingItem
             icon="language-outline"
@@ -315,8 +322,8 @@ export default function Settings({ navigation, route }) {
           />
         </View>
 
-        <View style={[styles.section, darkMode && styles.darkSection]}>
-          <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>SUPORTE</Text>
+        <View style={[styles.section, isDark && styles.darkSection]}>
+          <Text style={[styles.sectionTitle, isDark && styles.darkSectionTitle]}>SUPORTE</Text>
           <SettingItem
             icon="help-circle-outline"
             title="Ajuda & Suporte"
@@ -337,7 +344,7 @@ export default function Settings({ navigation, route }) {
 
         {/* Logout Button */}
         <TouchableOpacity 
-          style={[styles.logoutButton, darkMode && styles.darkLogoutButton]}
+          style={[styles.logoutButton, isDark && styles.darkLogoutButton]}
           activeOpacity={0.7}
           onPress={handleLogout}
         >
@@ -346,13 +353,14 @@ export default function Settings({ navigation, route }) {
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={[styles.versionText, darkMode && styles.darkSubtext]}>Versão 2.1.0</Text>
+          <Text style={[styles.versionText, isDark && styles.darkSubtext]}>Versão 2.1.0</Text>
         </View>
       </ScrollView>
     </View>
   );
 }
 
+// Os estilos permanecem os mesmos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
