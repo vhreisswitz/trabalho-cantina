@@ -1,3 +1,4 @@
+// screens/meusTickets.jsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -7,12 +8,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  RefreshControl,
-  StatusBar
+  RefreshControl
 } from 'react-native';
 import { supabase } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
-import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function MeusTickets({ route, navigation }) {
   const [tickets, setTickets] = useState([]);
@@ -21,24 +20,16 @@ export default function MeusTickets({ route, navigation }) {
   const { usuario } = route.params;
   const { buscarMeusTickets } = useCantinaTickets();
 
-  // Use o contexto do tema
-  const { darkMode } = useTheme();
-
-  // Cores do SENAI com suporte a tema escuro
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
-    azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
-    branco: darkMode ? '#1E293B' : '#FFFFFF',
+    azul_claro: '#E6F0FF',
+    branco: '#FFFFFF',
     laranja: '#FF6B35',
     verde: '#34C759',
     vermelho: '#FF3B30',
-    cinza: darkMode ? '#94A3B8' : '#5C6B8A',
-    cinza_claro: darkMode ? '#64748B' : '#8E8E93',
-    texto: darkMode ? '#FFFFFF' : '#000000',
-    texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A',
-    card: darkMode ? '#334155' : '#FFFFFF',
-    borda: darkMode ? '#475569' : '#E2E8F0'
+    cinza: '#5C6B8A',
+    cinza_claro: '#8E8E93'
   };
 
   useEffect(() => {
@@ -94,28 +85,9 @@ export default function MeusTickets({ route, navigation }) {
     );
   };
 
-  // Estilos dinâmicos
-  const dynamicStyles = {
-    container: {
-      backgroundColor: CORES_SENAI.azul_claro,
-    },
-    header: {
-      backgroundColor: CORES_SENAI.azul_principal,
-    },
-    texto: {
-      color: CORES_SENAI.texto,
-    },
-    textoSecundario: {
-      color: CORES_SENAI.texto_secundario,
-    },
-    card: {
-      backgroundColor: CORES_SENAI.branco,
-    }
-  };
-
   const renderTicket = ({ item }) => (
     <TouchableOpacity 
-      style={[styles.ticketCard, dynamicStyles.card]}
+      style={[styles.ticketCard, { backgroundColor: CORES_SENAI.branco }]}
       onPress={() => verTicket(item)}
       onLongPress={() => compartilharTicket(item)}
     >
@@ -127,12 +99,12 @@ export default function MeusTickets({ route, navigation }) {
           <Text style={[styles.ticketCode, { color: CORES_SENAI.cinza }]}>
             {item.ticket_code}
           </Text>
-          <Text style={[styles.data, { color: CORES_SENAI.texto_secundario }]}>
+          <Text style={styles.data}>
             Emitido: {new Date(item.created_at).toLocaleDateString('pt-BR')}
           </Text>
           
           {item.utilizado_em && (
-            <Text style={[styles.data, { color: CORES_SENAI.texto_secundario }]}>
+            <Text style={styles.data}>
               Utilizado: {new Date(item.utilizado_em).toLocaleDateString('pt-BR')}
             </Text>
           )}
@@ -151,25 +123,15 @@ export default function MeusTickets({ route, navigation }) {
           </View>
           
           {item.gratuito && item.status === 'ativo' && (
-            <Text style={[styles.gratuitoTag, { 
-              color: CORES_SENAI.laranja,
-              backgroundColor: darkMode ? '#4A1E0F' : '#FFE8E0'
-            }]}>
-              🎁 GRÁTIS
-            </Text>
+            <Text style={styles.gratuitoTag}>🎁 GRÁTIS</Text>
           )}
         </View>
       </View>
 
       {/* MENSAGEM ESPECIAL PARA TICKET DE BOAS-VINDAS */}
       {item.qr_data?.tipo === 'boas_vindas' && item.status === 'ativo' && (
-        <View style={[styles.mensagemPresente, { 
-          backgroundColor: darkMode ? '#4A1E0F' : '#FFF3E0',
-          borderLeftColor: CORES_SENAI.laranja
-        }]}>
-          <Text style={[styles.mensagemTexto, { 
-            color: darkMode ? '#FFB74D' : '#E65100'
-          }]}>
+        <View style={styles.mensagemPresente}>
+          <Text style={styles.mensagemTexto}>
             🎉 Presente de boas-vindas! Use este ticket para resgatar seu {item.cantina_produtos?.nome} grátis!
           </Text>
         </View>
@@ -203,9 +165,8 @@ export default function MeusTickets({ route, navigation }) {
 
   if (carregando) {
     return (
-      <View style={[styles.container, dynamicStyles.container]}>
-        <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
-        <View style={[styles.header, dynamicStyles.header]}>
+      <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
+        <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.botaoVoltar}>← Voltar</Text>
           </TouchableOpacity>
@@ -226,11 +187,9 @@ export default function MeusTickets({ route, navigation }) {
   const ticketsGratuitos = tickets.filter(t => t.gratuito).length;
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
-      
+    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
       {/* HEADER */}
-      <View style={[styles.header, dynamicStyles.header]}>
+      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.botaoVoltar}>← Voltar</Text>
         </TouchableOpacity>
@@ -248,30 +207,24 @@ export default function MeusTickets({ route, navigation }) {
       )}
 
       {/* ESTATÍSTICAS */}
-      <View style={[styles.estatisticas, dynamicStyles.card]}>
+      <View style={[styles.estatisticas, { backgroundColor: CORES_SENAI.branco }]}>
         <View style={styles.estatisticaItem}>
           <Text style={[styles.estatisticaNumero, { color: CORES_SENAI.verde }]}>
             {ticketsAtivos}
           </Text>
-          <Text style={[styles.estatisticaLabel, { color: CORES_SENAI.texto_secundario }]}>
-            Ativos
-          </Text>
+          <Text style={styles.estatisticaLabel}>Ativos</Text>
         </View>
         <View style={styles.estatisticaItem}>
           <Text style={[styles.estatisticaNumero, { color: CORES_SENAI.cinza_claro }]}>
             {tickets.filter(t => t.status === 'utilizado').length}
           </Text>
-          <Text style={[styles.estatisticaLabel, { color: CORES_SENAI.texto_secundario }]}>
-            Utilizados
-          </Text>
+          <Text style={styles.estatisticaLabel}>Utilizados</Text>
         </View>
         <View style={styles.estatisticaItem}>
           <Text style={[styles.estatisticaNumero, { color: CORES_SENAI.laranja }]}>
             {ticketsGratuitos}
           </Text>
-          <Text style={[styles.estatisticaLabel, { color: CORES_SENAI.texto_secundario }]}>
-            Gratuitos
-          </Text>
+          <Text style={styles.estatisticaLabel}>Gratuitos</Text>
         </View>
       </View>
 
@@ -291,10 +244,8 @@ export default function MeusTickets({ route, navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>🎫</Text>
-            <Text style={[styles.emptyTitle, { color: CORES_SENAI.texto }]}>
-              Nenhum ticket encontrado
-            </Text>
-            <Text style={[styles.emptySubtitle, { color: CORES_SENAI.texto_secundario }]}>
+            <Text style={styles.emptyTitle}>Nenhum ticket encontrado</Text>
+            <Text style={styles.emptySubtitle}>
               Seu ticket de boas-vindas deve aparecer aqui automaticamente ao fazer login!
             </Text>
             <TouchableOpacity 
@@ -374,6 +325,7 @@ const styles = StyleSheet.create({
   },
   estatisticaLabel: {
     fontSize: 12,
+    color: '#5C6B8A',
     fontWeight: '500',
   },
   lista: {
@@ -411,6 +363,7 @@ const styles = StyleSheet.create({
   },
   data: {
     fontSize: 12,
+    color: '#5C6B8A',
     marginBottom: 2,
   },
   statusContainer: {
@@ -429,18 +382,23 @@ const styles = StyleSheet.create({
   },
   gratuitoTag: {
     fontSize: 10,
+    color: '#FF6B35',
     fontWeight: 'bold',
+    backgroundColor: '#FFE8E0',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
   },
   mensagemPresente: {
+    backgroundColor: '#FFF3E0',
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
     borderLeftWidth: 4,
+    borderLeftColor: '#FF6B35',
   },
   mensagemTexto: {
+    color: '#E65100',
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 16,
@@ -496,11 +454,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#5C6B8A',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
+    color: '#5C6B8A',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,

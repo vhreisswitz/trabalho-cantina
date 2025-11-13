@@ -15,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Importe as funções do Supabase
 import { getTransacoesByUsuario, getEstatisticasUsuario } from '../services/database';
-import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function ExtratoScreen({ navigation, route }) {
   const usuario = route.params?.usuario;
@@ -32,22 +31,6 @@ export default function ExtratoScreen({ navigation, route }) {
     quantidadeRecargas: 0,
     quantidadeCompras: 0
   });
-
-  // Use o contexto do tema
-  const { darkMode } = useTheme();
-
-  // Cores baseadas no tema
-  const CORES = {
-    fundo: darkMode ? '#000000' : '#F8F9FA',
-    card: darkMode ? '#1C1C1E' : '#FFFFFF',
-    texto: darkMode ? '#FFFFFF' : '#000000',
-    texto_secundario: darkMode ? '#98989F' : '#8E8E93',
-    borda: darkMode ? '#38383A' : '#E5E5EA',
-    primaria: '#007AFF',
-    entrada: '#34C759',
-    saida: '#FF3B30',
-    filtro_inativo: darkMode ? '#2C2C2E' : '#F2F2F7'
-  };
 
   // Função para buscar transações do banco
   const fetchTransacoes = async () => {
@@ -125,20 +108,16 @@ export default function ExtratoScreen({ navigation, route }) {
                      transacao.descricao?.toLowerCase().includes('saldo');
 
     const icone = isRecarga ? 'add-circle-outline' : 'cart-outline';
-    const cor = isRecarga ? CORES.entrada : CORES.saida;
+    const cor = isRecarga ? '#34C759' : '#FF3B30';
     const sinal = isRecarga ? '+' : '-';
     const tipoTexto = isRecarga ? 'Recarga' : 'Compra';
 
-    const corFundoIcone = darkMode 
-      ? (isRecarga ? '#1A331A' : '#331A1A') 
-      : (isRecarga ? '#E8F5E8' : '#FFEBEE');
-
     return (
       <TouchableOpacity 
-        style={[styles.transacaoItem, { backgroundColor: CORES.card }]}
+        style={styles.transacaoItem}
         onPress={() => abrirDetalhes(transacao)}
       >
-        <View style={[styles.transacaoIcon, { backgroundColor: corFundoIcone }]}>
+        <View style={[styles.transacaoIcon, { backgroundColor: isRecarga ? '#E8F5E8' : '#FFEBEE' }]}>
           <Ionicons 
             name={icone} 
             size={20} 
@@ -146,140 +125,78 @@ export default function ExtratoScreen({ navigation, route }) {
           />
         </View>
         <View style={styles.transacaoInfo}>
-          <Text style={[styles.transacaoDescricao, { color: CORES.texto }]}>
-            {transacao.descricao}
-          </Text>
-          <Text style={[styles.transacaoData, { color: CORES.texto_secundario }]}>
+          <Text style={styles.transacaoDescricao}>{transacao.descricao}</Text>
+          <Text style={styles.transacaoData}>
             {new Date(transacao.data).toLocaleDateString('pt-BR')} • {transacao.estabelecimento}
           </Text>
           <View style={styles.tipoContainer}>
-            <Text style={[styles.tipoText, { 
-              color: cor,
-              backgroundColor: darkMode ? '#2C2C2E' : '#F2F2F7'
-            }]}>
-              {tipoTexto}
-            </Text>
-            <Text style={[styles.transacaoCategoria, { color: CORES.primaria }]}>
-              {transacao.categoria}
-            </Text>
+            <Text style={[styles.tipoText, { color: cor }]}>{tipoTexto}</Text>
+            <Text style={styles.transacaoCategoria}>{transacao.categoria}</Text>
           </View>
         </View>
         <View style={styles.transacaoValor}>
           <Text style={[styles.valorText, { color: cor }]}>
             {sinal} R$ {transacao.valor.toFixed(2)}
           </Text>
-          <Text style={[styles.statusText, { color: CORES.texto_secundario }]}>
-            {transacao.status}
-          </Text>
+          <Text style={styles.statusText}>{transacao.status}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  // Estilos dinâmicos
-  const dynamicStyles = {
-    container: {
-      backgroundColor: CORES.fundo,
-    },
-    header: {
-      backgroundColor: CORES.card,
-      borderBottomColor: CORES.borda,
-    },
-    headerTitle: {
-      color: CORES.texto,
-    },
-    resumoContainer: {
-      backgroundColor: CORES.card,
-    },
-    resumoTitle: {
-      color: CORES.texto_secundario,
-    },
-    saldoTotal: {
-      color: CORES.texto,
-    },
-    resumoLabel: {
-      color: CORES.texto_secundario,
-    },
-    listaTitle: {
-      color: CORES.texto,
-    },
-    modalContent: {
-      backgroundColor: CORES.card,
-    },
-    modalTitle: {
-      color: CORES.texto,
-    },
-    detalhesLabel: {
-      color: CORES.texto_secundario,
-    },
-    detalhesValue: {
-      color: CORES.texto,
-    },
-    emptyStateText: {
-      color: CORES.texto_secundario,
-    },
-    emptyStateSubtext: {
-      color: CORES.texto_secundario,
-    }
-  };
-
   if (loading) {
     return (
-      <View style={[styles.container, dynamicStyles.container]}>
-        <View style={[styles.header, dynamicStyles.header]}>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color={CORES.primaria} />
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Extrato</Text>
+          <Text style={styles.headerTitle}>Extrato</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={CORES.primaria} />
-          <Text style={[styles.loadingText, { color: CORES.texto_secundario }]}>
-            Carregando extrato...
-          </Text>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Carregando extrato...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       
       {/* Header */}
-      <View style={[styles.header, dynamicStyles.header]}>
+      <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color={CORES.primaria} />
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Extrato</Text>
+        <Text style={styles.headerTitle}>Extrato</Text>
         <TouchableOpacity onPress={exportarExtrato}>
-          <Ionicons name="download-outline" size={24} color={CORES.primaria} />
+          <Ionicons name="download-outline" size={24} color="#007AFF" />
         </TouchableOpacity>
       </View>
 
       {/* Resumo */}
-      <View style={[styles.resumoContainer, dynamicStyles.resumoContainer]}>
-        <Text style={[styles.resumoTitle, dynamicStyles.resumoTitle]}>Saldo Disponível</Text>
-        <Text style={[styles.saldoTotal, dynamicStyles.saldoTotal]}>
-          R$ {estatisticas.saldo.toFixed(2)}
-        </Text>
+      <View style={styles.resumoContainer}>
+        <Text style={styles.resumoTitle}>Saldo Disponível</Text>
+        <Text style={styles.saldoTotal}>R$ {estatisticas.saldo.toFixed(2)}</Text>
         <View style={styles.resumoLinha}>
           <View style={styles.resumoItem}>
             <Text style={styles.resumoValorEntrada}>+ R$ {estatisticas.totalEntradas.toFixed(2)}</Text>
-            <Text style={[styles.resumoLabel, dynamicStyles.resumoLabel]}>
+            <Text style={styles.resumoLabel}>
               {estatisticas.quantidadeRecargas} Recarga{estatisticas.quantidadeRecargas !== 1 ? 's' : ''}
             </Text>
           </View>
           <View style={styles.resumoItem}>
             <Text style={styles.resumoValorSaida}>- R$ {estatisticas.totalSaidas.toFixed(2)}</Text>
-            <Text style={[styles.resumoLabel, dynamicStyles.resumoLabel]}>
+            <Text style={styles.resumoLabel}>
               {estatisticas.quantidadeCompras} Compra{estatisticas.quantidadeCompras !== 1 ? 's' : ''}
             </Text>
           </View>
@@ -289,58 +206,34 @@ export default function ExtratoScreen({ navigation, route }) {
       {/* Filtros */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosContainer}>
         <TouchableOpacity 
-          style={[
-            styles.filtroButton, 
-            { backgroundColor: filtro === 'todos' ? CORES.primaria : CORES.filtro_inativo }
-          ]}
+          style={[styles.filtroButton, filtro === 'todos' && styles.filtroAtivo]}
           onPress={() => setFiltro('todos')}
         >
-          <Text style={[
-            styles.filtroText, 
-            { color: filtro === 'todos' ? '#FFFFFF' : CORES.texto_secundario }
-          ]}>
-            Todos
-          </Text>
+          <Text style={[styles.filtroText, filtro === 'todos' && styles.filtroTextAtivo]}>Todos</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[
-            styles.filtroButton, 
-            { backgroundColor: filtro === 'entrada' ? CORES.primaria : CORES.filtro_inativo }
-          ]}
+          style={[styles.filtroButton, filtro === 'entrada' && styles.filtroAtivo]}
           onPress={() => setFiltro('entrada')}
         >
           <Ionicons 
             name="add-circle-outline" 
             size={16} 
-            color={filtro === 'entrada' ? '#FFFFFF' : CORES.entrada} 
+            color={filtro === 'entrada' ? '#FFFFFF' : '#34C759'} 
             style={styles.filtroIcon}
           />
-          <Text style={[
-            styles.filtroText, 
-            { color: filtro === 'entrada' ? '#FFFFFF' : CORES.texto_secundario }
-          ]}>
-            Recargas
-          </Text>
+          <Text style={[styles.filtroText, filtro === 'entrada' && styles.filtroTextAtivo]}>Recargas</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[
-            styles.filtroButton, 
-            { backgroundColor: filtro === 'saida' ? CORES.primaria : CORES.filtro_inativo }
-          ]}
+          style={[styles.filtroButton, filtro === 'saida' && styles.filtroAtivo]}
           onPress={() => setFiltro('saida')}
         >
           <Ionicons 
             name="cart-outline" 
             size={16} 
-            color={filtro === 'saida' ? '#FFFFFF' : CORES.saida} 
+            color={filtro === 'saida' ? '#FFFFFF' : '#FF3B30'} 
             style={styles.filtroIcon}
           />
-          <Text style={[
-            styles.filtroText, 
-            { color: filtro === 'saida' ? '#FFFFFF' : CORES.texto_secundario }
-          ]}>
-            Compras
-          </Text>
+          <Text style={[styles.filtroText, filtro === 'saida' && styles.filtroTextAtivo]}>Compras</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -351,11 +244,11 @@ export default function ExtratoScreen({ navigation, route }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[CORES.primaria]}
+            colors={['#007AFF']}
           />
         }
       >
-        <Text style={[styles.listaTitle, dynamicStyles.listaTitle]}>
+        <Text style={styles.listaTitle}>
           {transacoesFiltradas.length === 0 
             ? 'Nenhuma transação' 
             : filtro === 'todos' 
@@ -371,9 +264,9 @@ export default function ExtratoScreen({ navigation, route }) {
             <Ionicons 
               name="document-text-outline" 
               size={64} 
-              color={CORES.texto_secundario} 
+              color="#C7C7CC" 
             />
-            <Text style={[styles.emptyStateText, dynamicStyles.emptyStateText]}>
+            <Text style={styles.emptyStateText}>
               {filtro === 'todos' 
                 ? 'Nenhuma transação encontrada' 
                 : filtro === 'entrada'
@@ -381,7 +274,7 @@ export default function ExtratoScreen({ navigation, route }) {
                   : 'Nenhuma compra encontrada'
               }
             </Text>
-            <Text style={[styles.emptyStateSubtext, dynamicStyles.emptyStateSubtext]}>
+            <Text style={styles.emptyStateSubtext}>
               {filtro === 'todos' 
                 ? 'Você ainda não possui transações' 
                 : filtro === 'entrada'
@@ -405,31 +298,23 @@ export default function ExtratoScreen({ navigation, route }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, dynamicStyles.modalContent]}>
+          <View style={styles.modalContent}>
             {transacaoSelecionada && (
               <>
                 <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, dynamicStyles.modalTitle]}>
-                    Detalhes da Transação
-                  </Text>
+                  <Text style={styles.modalTitle}>Detalhes da Transação</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <Ionicons name="close" size={24} color={CORES.texto_secundario} />
+                    <Ionicons name="close" size={24} color="#8E8E93" />
                   </TouchableOpacity>
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Descrição
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
-                    {transacaoSelecionada.descricao}
-                  </Text>
+                  <Text style={styles.detalhesLabel}>Descrição</Text>
+                  <Text style={styles.detalhesValue}>{transacaoSelecionada.descricao}</Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Valor
-                  </Text>
+                  <Text style={styles.detalhesLabel}>Valor</Text>
                   <Text style={[
                     styles.detalhesValor,
                     { 
@@ -437,7 +322,7 @@ export default function ExtratoScreen({ navigation, route }) {
                              transacaoSelecionada.descricao?.toLowerCase().includes('recarga') ||
                              transacaoSelecionada.descricao?.toLowerCase().includes('carga') ||
                              transacaoSelecionada.descricao?.toLowerCase().includes('saldo')) 
-                             ? CORES.entrada : CORES.saida 
+                             ? '#34C759' : '#FF3B30' 
                     }
                   ]}>
                     {(transacaoSelecionada.tipo === 'entrada' || 
@@ -449,19 +334,15 @@ export default function ExtratoScreen({ navigation, route }) {
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Data
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
+                  <Text style={styles.detalhesLabel}>Data</Text>
+                  <Text style={styles.detalhesValue}>
                     {new Date(transacaoSelecionada.data).toLocaleString('pt-BR')}
                   </Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Tipo
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
+                  <Text style={styles.detalhesLabel}>Tipo</Text>
+                  <Text style={styles.detalhesValue}>
                     {(transacaoSelecionada.tipo === 'entrada' || 
                       transacaoSelecionada.descricao?.toLowerCase().includes('recarga') ||
                       transacaoSelecionada.descricao?.toLowerCase().includes('carga') ||
@@ -471,30 +352,18 @@ export default function ExtratoScreen({ navigation, route }) {
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Categoria
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
-                    {transacaoSelecionada.categoria}
-                  </Text>
+                  <Text style={styles.detalhesLabel}>Categoria</Text>
+                  <Text style={styles.detalhesValue}>{transacaoSelecionada.categoria}</Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Estabelecimento
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
-                    {transacaoSelecionada.estabelecimento}
-                  </Text>
+                  <Text style={styles.detalhesLabel}>Estabelecimento</Text>
+                  <Text style={styles.detalhesValue}>{transacaoSelecionada.estabelecimento}</Text>
                 </View>
                 
                 <View style={styles.detalhesItem}>
-                  <Text style={[styles.detalhesLabel, dynamicStyles.detalhesLabel]}>
-                    Status
-                  </Text>
-                  <Text style={[styles.detalhesValue, dynamicStyles.detalhesValue]}>
-                    {transacaoSelecionada.status}
-                  </Text>
+                  <Text style={styles.detalhesLabel}>Status</Text>
+                  <Text style={styles.detalhesValue}>{transacaoSelecionada.status}</Text>
                 </View>
               </>
             )}
@@ -508,6 +377,7 @@ export default function ExtratoScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -516,7 +386,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
   },
   backButton: {
     padding: 8,
@@ -524,11 +396,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
+    color: '#000000',
   },
   headerRight: {
     width: 24,
   },
   resumoContainer: {
+    backgroundColor: '#FFFFFF',
     padding: 20,
     margin: 16,
     borderRadius: 12,
@@ -540,11 +414,13 @@ const styles = StyleSheet.create({
   },
   resumoTitle: {
     fontSize: 16,
+    color: '#8E8E93',
     marginBottom: 8,
   },
   saldoTotal: {
     fontSize: 28,
     fontWeight: '700',
+    color: '#000000',
     marginBottom: 16,
   },
   resumoLinha: {
@@ -568,6 +444,7 @@ const styles = StyleSheet.create({
   },
   resumoLabel: {
     fontSize: 12,
+    color: '#8E8E93',
     textAlign: 'center',
   },
   filtrosContainer: {
@@ -580,14 +457,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: '#F2F2F7',
     marginRight: 8,
+  },
+  filtroAtivo: {
+    backgroundColor: '#007AFF',
   },
   filtroIcon: {
     marginRight: 6,
   },
   filtroText: {
     fontSize: 14,
+    color: '#8E8E93',
     fontWeight: '500',
+  },
+  filtroTextAtivo: {
+    color: '#FFFFFF',
   },
   listaContainer: {
     flex: 1,
@@ -596,11 +481,13 @@ const styles = StyleSheet.create({
   listaTitle: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#000000',
     marginBottom: 16,
   },
   transacaoItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
@@ -624,10 +511,12 @@ const styles = StyleSheet.create({
   transacaoDescricao: {
     fontSize: 16,
     fontWeight: '500',
+    color: '#000000',
     marginBottom: 4,
   },
   transacaoData: {
     fontSize: 14,
+    color: '#8E8E93',
     marginBottom: 2,
   },
   tipoContainer: {
@@ -642,9 +531,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    backgroundColor: '#F2F2F7',
   },
   transacaoCategoria: {
     fontSize: 12,
+    color: '#007AFF',
   },
   transacaoValor: {
     alignItems: 'flex-end',
@@ -656,6 +547,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
+    color: '#8E8E93',
   },
   modalContainer: {
     flex: 1,
@@ -664,6 +556,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     width: '90%',
@@ -678,6 +571,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+    color: '#000000',
   },
   detalhesItem: {
     flexDirection: 'row',
@@ -689,10 +583,12 @@ const styles = StyleSheet.create({
   },
   detalhesLabel: {
     fontSize: 16,
+    color: '#8E8E93',
   },
   detalhesValue: {
     fontSize: 16,
     fontWeight: '500',
+    color: '#000000',
   },
   detalhesValor: {
     fontSize: 18,
@@ -706,6 +602,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    color: '#8E8E93',
   },
   emptyState: {
     alignItems: 'center',
@@ -715,11 +612,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#8E8E93',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
+    color: '#C7C7CC',
     textAlign: 'center',
   },
 });
