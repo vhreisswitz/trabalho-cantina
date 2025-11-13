@@ -5,6 +5,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
+// Importe o ThemeProvider
+import { ThemeProvider } from './context/themeContext';
 
 import Login from './screens/login';
 import Home from './screens/home';
@@ -103,7 +105,6 @@ export default function App() {
 
       <StatusBar style="auto" />
     </NavigationContainer>
-    </ThemeProvider>
   );
 }
 
