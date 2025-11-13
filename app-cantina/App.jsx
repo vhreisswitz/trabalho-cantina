@@ -13,7 +13,6 @@ import RecarregarSaldo from './screens/RecarregarSaldo';
 import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
-import Perfil from './screens/profile';
 import Extrato from './screens/extrato';
 import { PointerType } from 'react-native-gesture-handler';
 import MeusTickets from './screens/meusTickets';
@@ -75,13 +74,6 @@ export default function App() {
             component={Sobre}
             options={{
               animation: 'fade_from_bottom', // Transição suave para sobre
-            }}
-          />
-          <Stack.Screen
-            name="Perfil"
-            component={Perfil}
-            options={{
-              animation: 'slide_from_right', // Transição padrão para perfil
             }}
           />
           <Stack.Screen
