@@ -1,20 +1,20 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { addRecarga, getSaldoUsuario } from '../services/database'; // Importe as funções corretas
+import { addRecarga } from '../services/database';
+import { useSaldo } from '../hooks/useSaldo';
 
 export default function RecarregarSaldo({ route, navigation }) {
   const { usuario, onSaldoAtualizado } = route.params;
+  const { saldo, atualizarSaldo } = useSaldo();
 
   const recarregar = async (valor) => {
     try {
-      // Usa a função addRecarga que já cria a transação E atualiza o saldo
       const transacao = await addRecarga(usuario.id, valor);
       
       if (transacao) {
-        // Busca o saldo atualizado
-        const novoSaldo = await getSaldoUsuario(usuario.id);
-        
-        // Atualiza o saldo na tela principal via callback
+        const novoSaldo = saldo + valor;
+        atualizarSaldo(novoSaldo);
+
         if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
 
         Alert.alert('✅ Sucesso', `Saldo recarregado com sucesso!\nNovo saldo: R$ ${novoSaldo.toFixed(2)}`);
@@ -31,7 +31,7 @@ export default function RecarregarSaldo({ route, navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Adicionar Saldo</Text>
-      <Text style={styles.saldoAtual}>Saldo atual: R$ {usuario.saldo?.toFixed(2) || '0.00'}</Text>
+      <Text style={styles.saldoAtual}>Saldo atual: R$ {saldo.toFixed(2)}</Text>
 
       {[5, 10, 20, 50, 100].map((valor) => (
         <TouchableOpacity

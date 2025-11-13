@@ -3,8 +3,7 @@ import { StyleSheet } from 'react-native';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-// esta parte é especifica para importar as telas.
+import { SaldoProvider } from './hooks/useSaldo';
 import Login from './screens/login';
 import Home from './screens/home';
 import RecarregarSaldo from './screens/RecarregarSaldo';
@@ -18,78 +17,77 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-          animation: 'slide_from_right',
-          gestureEnabled: true,
-          fullScreenGestureEnabled: true,
-        }}
-      >
-        <Stack.Screen 
-          name="Login" 
-          component={Login}
-          options={{
-            animation: 'fade', // Transição suave para o login
+    <SaldoProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
           }}
-        />
-        <Stack.Screen 
-          name="Home" 
-          component={Home}
-          options={{
-            animation: 'slide_from_bottom', // Entrada da home vindo de baixo
-          }}
-        />
-        <Stack.Screen 
-          name="RecarregarSaldo" 
-          component={RecarregarSaldo}
-          options={{
-            animation: 'slide_from_right', // Mantém o deslize da direita
-          }}
-        />
-        <Stack.Screen 
-          name="Carrinho" 
-          component={Carrinho}
-          options={{
-            animation: 'slide_from_right', // Mantém o deslize da direita
-          }}
-        />
-        <Stack.Screen 
-          name="Configuracoes" 
-          component={Configuracoes}
-          options={{
-            animation: 'slide_from_left', // Diferente para configurações
-          }}
-        />
-        <Stack.Screen 
-          name="Sobre" 
-          component={Sobre}
-          options={{
-            animation: 'fade_from_bottom', // Transição suave para sobre
-          }}
-        />
-        <Stack.Screen 
-          name="Perfil" 
-          component={Perfil}
-          options={{
-            animation: 'slide_from_right', // Transição padrão para perfil
-          }}
-        />
-        <Stack.Screen 
-          name="Extrato" 
-          component={Extrato}
-          options={{
-            animation: 'slide_from_right', // Transição padrão para extrato
-          }}
-        />
-        
-      </Stack.Navigator>
-      {/* FIM DO NAVEGADOR */}
-
-      <StatusBar style="auto" />
-    </NavigationContainer>
+        >
+          <Stack.Screen 
+            name="Login" 
+            component={Login}
+            options={{
+              animation: 'fade',
+            }}
+          />
+          <Stack.Screen 
+            name="Home" 
+            component={Home}
+            options={{
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen 
+            name="RecarregarSaldo" 
+            component={RecarregarSaldo}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="Carrinho" 
+            component={Carrinho}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="Configuracoes" 
+            component={Configuracoes}
+            options={{
+              animation: 'slide_from_left',
+            }}
+          />
+          <Stack.Screen 
+            name="Sobre" 
+            component={Sobre}
+            options={{
+              animation: 'fade_from_bottom',
+            }}
+          />
+          <Stack.Screen 
+            name="Perfil" 
+            component={Perfil}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="Extrato" 
+            component={Extrato}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+        </Stack.Navigator>
+        <StatusBar style="auto" />
+      </NavigationContainer>
+    </SaldoProvider>
   );
 }
 

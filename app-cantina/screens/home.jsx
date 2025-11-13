@@ -6,20 +6,20 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
-  Image
+  ActivityIndicator
 } from 'react-native';
-import { supabase, addCompra, getSaldoUsuario } from '../services/database';
+import { supabase, addCompra } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
+import { useSaldo } from '../hooks/useSaldo';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
-  const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
 
-  // Hook para tickets
+  const { saldo, atualizarSaldo, definirUsuario } = useSaldo();
+
   const {
     gerarTicketGratuito,
     comprarTicket,
@@ -27,7 +27,6 @@ export default function Home({ route, navigation }) {
     loading: loadingTicket
   } = useCantinaTickets();
 
-  // Cores oficiais do SENAI
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
@@ -39,12 +38,11 @@ export default function Home({ route, navigation }) {
 
   useEffect(() => {
     if (route.params?.usuario) {
-      setUsuario(route.params.usuario);
-      setSaldo(route.params.usuario.saldo || 0);
-
-      //  INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
+      const usuarioData = route.params.usuario;
+      setUsuario(usuarioData);
+      definirUsuario(usuarioData.id);
       console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
-      inicializarTicketBoasVindas(route.params.usuario.id);
+      inicializarTicketBoasVindas(usuarioData.id);
     } else {
       Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
       navigation.navigate('Login');
@@ -71,7 +69,6 @@ export default function Home({ route, navigation }) {
     Alert.alert('✅ Adicionado', `${produto.nome} foi adicionado ao carrinho!`);
   }
 
-  // SUBSTITUA a função comprarProduto existente por esta:
   async function comprarProduto(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
     if (saldo < produto.preco) {
@@ -79,16 +76,11 @@ export default function Home({ route, navigation }) {
     }
 
     try {
-      // Usa a função addCompra do database.js que já cria a transação E atualiza o saldo
       const transacao = await addCompra(usuario.id, produto.preco, produto.nome, 'Cantina SENAI');
 
       if (transacao) {
-        // Busca o saldo atualizado
-        const novoSaldo = await getSaldoUsuario(usuario.id);
-
-        // Atualiza o estado local
-        setSaldo(novoSaldo);
-        setUsuario(prev => ({ ...prev, saldo: novoSaldo }));
+        const novoSaldo = saldo - produto.preco;
+        atualizarSaldo(novoSaldo);
 
         Alert.alert('✅ Sucesso', `Você comprou: ${produto.nome}\nNovo saldo: R$ ${novoSaldo.toFixed(2)}`);
       } else {
@@ -102,11 +94,10 @@ export default function Home({ route, navigation }) {
 
   function irParaExtrato() {
     navigation.navigate('Extrato', {
-      usuario: { ...usuario, saldo } // Garante que o saldo atualizado seja passado
+      usuario: { ...usuario, saldo }
     });
   }
 
-  // FUNÇÃO PARA PEGAR TICKET GRATUITO
   async function pegarTicketGratuito(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
 
@@ -131,7 +122,6 @@ export default function Home({ route, navigation }) {
     );
   }
 
-  // FUNÇÃO PARA COMPRAR TICKET (após usar o gratuito)
   async function comprarTicketProduto(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
 
@@ -145,7 +135,7 @@ export default function Home({ route, navigation }) {
           onPress: async () => {
             const resultado = await comprarTicket(produto.id, usuario.id, saldo);
             if (resultado) {
-              setSaldo(resultado.novoSaldo);
+              atualizarSaldo(resultado.novoSaldo);
               navigation.navigate('TicketDigital', {
                 ticket: resultado.ticket,
                 usuario: { ...usuario, saldo: resultado.novoSaldo }
@@ -167,7 +157,7 @@ export default function Home({ route, navigation }) {
       usuario,
       carrinho,
       onCompraFinalizada: (novoSaldo) => {
-        setSaldo(novoSaldo);
+        atualizarSaldo(novoSaldo);
         setCarrinho([]);
         setUsuario(prevUsuario => ({ ...prevUsuario, saldo: novoSaldo }));
       }
@@ -182,15 +172,21 @@ export default function Home({ route, navigation }) {
     navigation.navigate('MeusTickets', { usuario });
   }
 
-  // FUNÇÃO PARA VERIFICAR SE PRODUTO ACEITA TICKET
+  function irParaRecarregarSaldo() {
+    navigation.navigate('RecarregarSaldo', {
+      usuario,
+      onSaldoAtualizado: (novoSaldo) => {
+        atualizarSaldo(novoSaldo);
+      },
+    });
+  }
+
   function produtoAceitaTicket(produto) {
-    // Produtos com código P001, P002, P003, etc geram tickets
     return produto.codigo?.startsWith('P00');
   }
 
   return (
     <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
-      {/* HEADER COM IDENTIDADE VISUAL DO SENAI */}
       <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
@@ -212,6 +208,13 @@ export default function Home({ route, navigation }) {
 
           <View style={styles.headerButtons}>
             <TouchableOpacity
+              style={[styles.extratoButton, { backgroundColor: CORES_SENAI.branco }]}
+              onPress={irParaExtrato}
+            >
+              <Text style={[styles.extratoIcon, { color: CORES_SENAI.azul_principal }]}>📊</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaCarrinho}
             >
@@ -219,13 +222,6 @@ export default function Home({ route, navigation }) {
               {carrinho.length > 0 && (
                 <View style={[styles.carrinhoBadge, { backgroundColor: CORES_SENAI.laranja }]}>
                   <Text style={styles.carrinhoBadgeText}>{carrinho.length}</Text>
-                  // No headerButtons, adicione este botão:
-                  <TouchableOpacity
-                    style={[styles.extratoButton, { backgroundColor: CORES_SENAI.branco }]}
-                    onPress={irParaExtrato}
-                  >
-                    <Text style={[styles.extratoIcon, { color: CORES_SENAI.azul_principal }]}>📊</Text>
-                  </TouchableOpacity>
                 </View>
               )}
             </TouchableOpacity>
@@ -247,25 +243,15 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
           style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
-          onPress={() =>
-            navigation.navigate('RecarregarSaldo', {
-              usuario,
-              onSaldoAtualizado: (novoSaldo) => {
-                setSaldo(novoSaldo);
-                setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo }));
-              },
-            })
-          }
+          onPress={irParaRecarregarSaldo}
         >
           <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
         </TouchableOpacity>
       </View>
 
-      {/* SEÇÃO DE PRODUTOS */}
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
           🛍️ Produtos Disponíveis
@@ -300,14 +286,12 @@ export default function Home({ route, navigation }) {
                   <Text style={styles.produtoDescricao}>{item.descricao}</Text>
                 )}
 
-                {/* INDICADOR DE TICKET GRATUITO */}
                 {produtoAceitaTicket(item) && (
                   <Text style={styles.ticketGratuitoInfo}>🎫 Disponível como Vale</Text>
                 )}
               </View>
 
               <View style={styles.botoesContainer}>
-                {/* BOTÃO EXISTENTE - COMPRAR DIRETO */}
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
@@ -322,7 +306,6 @@ export default function Home({ route, navigation }) {
                   </Text>
                 </TouchableOpacity>
 
-                {/* BOTÃO TICKET GRATUITO (apenas para produtos que aceitam) */}
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[styles.ticketGratuitoButton, { backgroundColor: CORES_SENAI.laranja }]}
@@ -335,7 +318,6 @@ export default function Home({ route, navigation }) {
                   </TouchableOpacity>
                 )}
 
-                {/* BOTÃO COMPRAR TICKET (apenas para produtos que aceitam) */}
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[
@@ -430,6 +412,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 4,
+  },
+  extratoButton: {
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  extratoIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   carrinhoButton: {
     padding: 12,
@@ -613,19 +608,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 12,
     textAlign: 'center',
-  },
-
-  extratoButton: {
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  extratoIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });
