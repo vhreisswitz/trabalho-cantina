@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ThemeProvider } from '@react-navigation/native';
 
 
 import Login from './screens/login';
@@ -20,7 +21,6 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    // Envolva toda a aplicação com o ThemeProvider
     <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator
@@ -88,8 +88,8 @@ export default function App() {
               animation: 'slide_from_right', // Transição padrão para extrato
             }}
           />
-          <Stack.Screen 
-            name="MeusTickets" 
+          <Stack.Screen
+            name="MeusTickets"
             component={MeusTickets}
             options={{ headerShown: false }}
           />
@@ -101,16 +101,15 @@ export default function App() {
         </Stack.Navigator>
         {/* ✅ FIM DO NAVIGATOR */}
 
-      <StatusBar style="auto" />
-    </NavigationContainer>
-  );
+        <StatusBar style="auto" />
+      </NavigationContainer>
+      );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+      const styles = StyleSheet.create({
+        container: {
+        flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
   },
 });
