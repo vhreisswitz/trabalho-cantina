@@ -12,6 +12,10 @@ import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Perfil from './screens/profile';
 import Extrato from './screens/extrato';
+import AdminDashboard from './screens/admin-dashboard';
+import ManageProducts from './screens/manage-products';
+import ManageUsers from './screens/manage-users';
+import SalesReports from './screens/sales-reports';
 
 const Stack = createNativeStackNavigator();
 
@@ -80,6 +84,34 @@ export default function App() {
           <Stack.Screen 
             name="Extrato" 
             component={Extrato}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="AdminDashboard" 
+            component={AdminDashboard}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="ManageProducts" 
+            component={ManageProducts}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="ManageUsers" 
+            component={ManageUsers}
+            options={{
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen 
+            name="SalesReports" 
+            component={SalesReports}
             options={{
               animation: 'slide_from_right',
             }}

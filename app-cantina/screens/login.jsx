@@ -30,11 +30,9 @@ export default function Login() {
     setErrors({});
   };
 
-  // Função auxiliar para criar ticket gratuito
   async function criarTicketGratuitoAoLogar(usuario) {
     try {
       setCriandoTicket(true);
-      // Busca o produto padrão para ticket (primeiro da lista)
       const { data: produtoPadrao, error: prodError } = await supabase
         .from('cantina_produtos')
         .select('id, nome, preco, codigo')
@@ -47,7 +45,6 @@ export default function Login() {
         return null;
       }
 
-      // Cria o ticket gratuito
       const ticketCode = `TKT-GRATIS-LOGIN-${usuario.id}-${Date.now()}`;
       const { error: ticketError } = await supabase
         .from('cantina_tickets')
@@ -71,8 +68,6 @@ export default function Login() {
         }]);
 
       if (ticketError) {
-        console.log('bbbb');
-        console.log(ticketError);
         Alert.alert('Erro ao criar ticket', 'Pode ser regra de segurança (RLS) bloqueando vale. Chame um admin!');
         setCriandoTicket(false);
         return null;
@@ -86,7 +81,6 @@ export default function Login() {
     }
   }
 
-  // Função de login, adaptada para criar ticket após login
   const handleCadastrar = async () => {
     const novosErros = {};
 
@@ -98,15 +92,11 @@ export default function Login() {
 
     if (Object.keys(novosErros).length === 0) {
       try {
-        console.log('Fazendo login...', { nome, matricula });
-
         const { data, error } = await supabase
           .from('usuarios')
           .select('*')
           .eq('matricula', matricula)
           .ilike('nome', `%${nome}%`);
-
-        console.log('Resposta login:', { data, error });
 
         if (error) {
           setErrors({ geral: `Erro: ${error.message}` });
@@ -114,11 +104,20 @@ export default function Login() {
         }
 
         if (data && data.length > 0) {
-          // Criar ticket gratuito no login (se usuário existe)
-          await criarTicketGratuitoAoLogar(data[0]);
+          const usuario = data[0];
+          
+          // DEBUG - Mostra os dados do usuário
+          Alert.alert(
+            'DEBUG - Dados do Usuário', 
+            `ID: ${usuario.id}\nNome: ${usuario.nome}\nTipo: ${usuario.tipo}\nMatrícula: ${usuario.matricula}`
+          );
 
-          // Navega para Home normalmente
-          navigation.navigate('Home', { usuario: data[0] });
+          if (usuario.tipo === 'admin') {
+            navigation.navigate('AdminDashboard', { usuario });
+          } else {
+            await criarTicketGratuitoAoLogar(usuario);
+            navigation.navigate('Home', { usuario });
+          }
         } else {
           setErrors({ geral: 'Nome ou matrícula incorretos. Verifique os dados.' });
         }
@@ -131,8 +130,6 @@ export default function Login() {
   return (
     <View style={[styles.container, isDarkMode ? styles.darkGradientBackground : styles.lightGradientBackground]}>
       <ScrollView style={styles.scrollView}>
-        
-
         <View style={[styles.tituloContainer]}>
           <Text style={[styles.tituloLogin]}>
             Login
