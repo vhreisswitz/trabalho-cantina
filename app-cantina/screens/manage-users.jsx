@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
   FlatList,
   ActivityIndicator
@@ -114,7 +113,7 @@ export default function ManageUsers() {
         <Text style={styles.headerTitle}>Gerenciar Usuários</Text>
       </View>
 
-      <ScrollView style={styles.content}>
+      <View style={styles.content}>
         <View style={styles.formContainer}>
           <Text style={styles.formTitle}>
             {modoEdicao ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
@@ -224,10 +223,11 @@ export default function ManageUsers() {
                   </TouchableOpacity>
                 </View>
               )}
+              scrollEnabled={false}
             />
           )}
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }

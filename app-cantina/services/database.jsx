@@ -363,8 +363,7 @@ export const adminFunctions = {
           matricula: usuarioData.matricula,
           email: usuarioData.email,
           tipo: usuarioData.tipo || 'student',
-          saldo: usuarioData.saldo || 0,
-          criado_em: new Date().toISOString()
+          saldo: usuarioData.saldo || 0
         }])
         .select()
         .single();
@@ -384,8 +383,7 @@ export const adminFunctions = {
           matricula: usuarioData.matricula,
           email: usuarioData.email,
           tipo: usuarioData.tipo,
-          saldo: usuarioData.saldo,
-          updated_at: new Date().toISOString()
+          saldo: usuarioData.saldo
         })
         .eq('id', usuarioId)
         .select()
