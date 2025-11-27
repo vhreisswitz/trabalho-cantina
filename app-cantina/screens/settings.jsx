@@ -13,6 +13,7 @@ import {
   Linking
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/themeContext'; // Verifique o caminho correto
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -22,16 +23,18 @@ export default function Settings({ navigation, route }) {
   };
   
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [biometric, setBiometric] = useState(false);
   const [language, setLanguage] = useState('Português');
   
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // Função para alternar o modo escuro
+  // USE O CONTEXTO DE FORMA SIMPLES - CORRIGIDO
+  const { darkMode, setTheme } = useTheme();
+
+  // Função para alternar o modo escuro - CORRIGIDA (SIMPLES)
   const toggleDarkMode = (value) => {
-    setDarkMode(value);
-    console.log('Modo escuro:', value ? 'ativado' : 'desativado');
+    console.log('Mudando tema para:', value ? 'dark' : 'light');
+    setTheme(value);
   };
 
   // Função para lidar com logout
@@ -353,6 +356,7 @@ export default function Settings({ navigation, route }) {
   );
 }
 
+// Os estilos permanecem os mesmos
 const styles = StyleSheet.create({
   container: {
     flex: 1,

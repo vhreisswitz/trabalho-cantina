@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { supabase } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
-import { useTheme } from '../context/themeContext'; 
+import { useTheme } from '../context/themeContext';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
@@ -262,7 +262,7 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-      
+      {/* BOTÕES CENTRALIZADOS */}
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
           style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
@@ -457,6 +457,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
+  },
+  carrinhoAddText:{
+    color: '#005CA9',
+    fontWeight: 'bold',
+    border: '1px solid #005CA9',
+    paddingVertical: 6,
+    backgroundColor: '#E6F0FF',
+    borderRadius: 8,
   },
   ticketsButton: {
     padding: 12,
