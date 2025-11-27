@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, ScrollView, StatusBar, 
-  TouchableOpacity, ActivityIndicator, Alert, Modal, RefreshControl 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  StatusBar, 
+  TouchableOpacity, 
+  ActivityIndicator,
+  Alert,
+  Modal,
+  RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+// Importe as funções do Supabase
 import { getTransacoesByUsuario, getEstatisticasUsuario } from '../services/database';
+import { useTheme } from '../context/themeContext'; // Importe o hook
 
 export default function ExtratoScreen({ navigation, route }) {
   const usuario = route.params?.usuario;
-  const { saldo } = useSaldo();
-  
   const [filtro, setFiltro] = useState('todos');
   const [modalVisible, setModalVisible] = useState(false);
   const [transacaoSelecionada, setTransacaoSelecionada] = useState(null);
@@ -40,14 +49,17 @@ export default function ExtratoScreen({ navigation, route }) {
     filtro_inativo: darkMode ? '#2C2C2E' : '#F2F2F7'
   };
 
+  // Função para buscar transações do banco
   const fetchTransacoes = async () => {
     try {
       setLoading(true);
       console.log('Buscando transações para usuário:', usuario.id);
       
+      // Busca transações
       const transacoesDB = await getTransacoesByUsuario(usuario.id);
       console.log('Transações encontradas:', transacoesDB);
       
+      // Busca estatísticas
       const stats = await getEstatisticasUsuario(usuario.id);
       
       setTransacoes(transacoesDB);
@@ -61,16 +73,12 @@ export default function ExtratoScreen({ navigation, route }) {
     }
   };
 
+  // Busca transações quando a tela é aberta
   useEffect(() => {
-    if (usuario?.id) {
-      fetchTransacoes();
-      setEstatisticas(prev => ({
-        ...prev,
-        saldo: saldo
-      }));
-    }
-  }, [usuario?.id, saldo]);
+    fetchTransacoes();
+  }, [usuario.id]);
 
+  // Pull to refresh
   const onRefresh = () => {
     setRefreshing(true);
     fetchTransacoes();
@@ -110,6 +118,7 @@ export default function ExtratoScreen({ navigation, route }) {
   };
 
   const TransacaoItem = ({ transacao }) => {
+    // Determina se é recarga (entrada) ou compra (saída)
     const isRecarga = transacao.tipo === 'entrada' || 
                      transacao.descricao?.toLowerCase().includes('recarga') ||
                      transacao.descricao?.toLowerCase().includes('carga') ||
@@ -242,7 +251,7 @@ export default function ExtratoScreen({ navigation, route }) {
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -256,9 +265,11 @@ export default function ExtratoScreen({ navigation, route }) {
       </View>
 
       {/* Resumo */}
-      <View style={styles.resumoContainer}>
-        <Text style={styles.resumoTitle}>Saldo Disponível</Text>
-        <Text style={styles.saldoTotal}>R$ {estatisticas.saldo.toFixed(2)}</Text>
+      <View style={[styles.resumoContainer, dynamicStyles.resumoContainer]}>
+        <Text style={[styles.resumoTitle, dynamicStyles.resumoTitle]}>Saldo Disponível</Text>
+        <Text style={[styles.saldoTotal, dynamicStyles.saldoTotal]}>
+          R$ {estatisticas.saldo.toFixed(2)}
+        </Text>
         <View style={styles.resumoLinha}>
           <View style={styles.resumoItem}>
             <Text style={styles.resumoValorEntrada}>+ R$ {estatisticas.totalEntradas.toFixed(2)}</Text>
@@ -275,6 +286,7 @@ export default function ExtratoScreen({ navigation, route }) {
         </View>
       </View>
 
+      {/* Filtros */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosContainer}>
         <TouchableOpacity 
           style={[
@@ -332,6 +344,7 @@ export default function ExtratoScreen({ navigation, route }) {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* Lista de Transações */}
       <ScrollView 
         style={styles.listaContainer}
         refreshControl={
@@ -384,6 +397,7 @@ export default function ExtratoScreen({ navigation, route }) {
         )}
       </ScrollView>
 
+      {/* Modal de Detalhes */}
       <Modal
         animationType="slide"
         transparent={true}

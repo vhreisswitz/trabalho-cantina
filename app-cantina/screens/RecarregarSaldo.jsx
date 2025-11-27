@@ -1,21 +1,32 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { addRecarga, getSaldoUsuario } from '../services/database'; // Importe as funções corretas
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert, 
+  StatusBar 
+} from 'react-native';
+import { supabase } from '../services/database';
+import { useTheme } from '../context/themeContext';
 
 export default function RecarregarSaldo({ route, navigation }) {
   const { usuario, onSaldoAtualizado } = route.params;
+  
+  const { darkMode } = useTheme();
 
   const recarregar = async (valor) => {
     try {
-      // Usa a função addRecarga que já cria a transação E atualiza o saldo
-      const transacao = await addRecarga(usuario.id, valor);
-      
-      if (transacao) {
-        // Busca o saldo atualizado
-        const novoSaldo = await getSaldoUsuario(usuario.id);
-        
-        // Atualiza o saldo na tela principal via callback
-        if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
+      const novoSaldo = usuario.saldo + valor;
+
+      const { error } = await supabase
+        .from('usuarios')
+        .update({ saldo: novoSaldo })
+        .eq('id', usuario.id);
+
+      if (error) throw error;
+
+      if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
 
       Alert.alert('✅ Sucesso', `Saldo atualizado para R$ ${novoSaldo.toFixed(2)}`);
       navigation.goBack();
@@ -39,9 +50,16 @@ export default function RecarregarSaldo({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adicionar Saldo</Text>
-      <Text style={styles.saldoAtual}>Saldo atual: R$ {usuario.saldo?.toFixed(2) || '0.00'}</Text>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+      
+      <Text style={[styles.title, dynamicStyles.title]}>
+        Adicionar Saldo
+      </Text>
+
+      <Text style={[styles.saldoAtual, { color: darkMode ? '#CBD5E1' : '#5C6B8A' }]}>
+        Saldo atual: R$ {usuario.saldo.toFixed(2)}
+      </Text>
 
       {[5, 10, 20, 50, 100].map((valor) => (
         <TouchableOpacity
