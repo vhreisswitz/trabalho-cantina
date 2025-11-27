@@ -7,7 +7,8 @@ import {
   StyleSheet,
   Alert,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { adminFunctions } from '../services/database';
@@ -28,7 +29,6 @@ export default function ManageUsers() {
   });
 
   useEffect(() => {
-    console.log('🚀 Inicializando ManageUsers como admin');
     carregarUsuarios();
   }, []);
 
@@ -38,6 +38,7 @@ export default function ManageUsers() {
       const usuariosData = await adminFunctions.getUsuarios();
       setUsuarios(usuariosData);
     } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
       Alert.alert('Erro', 'Falha ao carregar usuários');
     } finally {
       setLoading(false);
@@ -63,13 +64,17 @@ export default function ManageUsers() {
     }
 
     try {
+      console.log('Tentando salvar usuário:', formData);
+
       if (modoEdicao && usuarioEditando) {
+        console.log('Atualizando usuário ID:', usuarioEditando.id);
         await adminFunctions.atualizarUsuario(usuarioEditando.id, {
           ...formData,
           saldo: parseFloat(formData.saldo) || 0
         });
         Alert.alert('Sucesso', 'Usuário atualizado!');
       } else {
+        console.log('Adicionando novo usuário');
         await adminFunctions.adicionarUsuario({
           ...formData,
           saldo: parseFloat(formData.saldo) || 0
@@ -80,7 +85,8 @@ export default function ManageUsers() {
       limparFormulario();
       carregarUsuarios();
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao salvar usuário');
+      console.error('ERRO ao salvar usuário:', error);
+      Alert.alert('Erro', `Falha ao salvar usuário: ${error.message}`);
     }
   };
 
@@ -113,7 +119,7 @@ export default function ManageUsers() {
         <Text style={styles.headerTitle}>Gerenciar Usuários</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.formContainer}>
           <Text style={styles.formTitle}>
             {modoEdicao ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
@@ -198,11 +204,9 @@ export default function ManageUsers() {
           {loading ? (
             <ActivityIndicator size="large" color="#005CA9" />
           ) : (
-            <FlatList
-              data={usuarios}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.usuarioItem}>
+            <View>
+              {usuarios.map((item) => (
+                <View key={item.id.toString()} style={styles.usuarioItem}>
                   <View style={styles.usuarioInfo}>
                     <Text style={styles.usuarioNome}>{item.nome}</Text>
                     <Text style={styles.usuarioMatricula}>Matrícula: {item.matricula}</Text>
@@ -222,12 +226,11 @@ export default function ManageUsers() {
                     <Text style={styles.actionButtonText}>Editar</Text>
                   </TouchableOpacity>
                 </View>
-              )}
-              scrollEnabled={false}
-            />
+              ))}
+            </View>
           )}
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -263,15 +266,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    padding: 16,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   formContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    margin: 16,
+    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -347,6 +353,8 @@ const styles = StyleSheet.create({
   },
   listaContainer: {
     backgroundColor: '#FFFFFF',
+    margin: 16,
+    marginTop: 8,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -399,7 +407,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: '#28a745',
   },
   editButton: {
     backgroundColor: '#28a745',
