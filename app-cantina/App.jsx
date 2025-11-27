@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
+
 import Login from './screens/login';
 import Home from './screens/home';
 import RecarregarSaldo from './screens/RecarregarSaldo';
@@ -12,7 +13,6 @@ import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Extrato from './screens/extrato';
-import { PointerType } from 'react-native-gesture-handler';
 import MeusTickets from './screens/meusTickets';
 import TicketDigital from './screens/TicketDigital';
 
@@ -103,6 +103,7 @@ export default function App() {
 
       <StatusBar style="auto" />
     </NavigationContainer>
+    </ThemeProvider>
   );
 }
 
