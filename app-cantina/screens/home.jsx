@@ -135,31 +135,7 @@ export default function Home({ route, navigation }) {
     );
   }
 
-  // FUNÇÃO PARA COMPRAR TICKET (após usar o gratuito)
-  async function comprarTicketProduto(produto) {
-    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
-    
-    Alert.alert(
-      'Comprar Vale',
-      `Deseja comprar um vale para ${produto.nome} por R$ ${produto.preco}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Comprar Vale', 
-          onPress: async () => {
-            const resultado = await comprarTicket(produto.id, usuario.id, saldo);
-            if (resultado) {
-              setSaldo(resultado.novoSaldo);
-              navigation.navigate('TicketDigital', { 
-                ticket: resultado.ticket,
-                usuario: { ...usuario, saldo: resultado.novoSaldo }
-              });
-            }
-          }
-        }
-      ]
-    );
-  }
+  
 
   function irParaCarrinho() {
     if (carrinho.length === 0) {
@@ -350,23 +326,13 @@ export default function Home({ route, navigation }) {
                     </Text>
                   </TouchableOpacity>
                 )}
-
-                {/* BOTÃO COMPRAR TICKET (apenas para produtos que aceitam) */}
-                {produtoAceitaTicket(item) && (
-                  <TouchableOpacity
-                    style={[
-                      styles.ticketButton,
-                      { backgroundColor: CORES_SENAI.azul_escuro },
-                      saldo < item.preco && styles.comprarButtonDisabled,
-                    ]}
-                    onPress={() => comprarTicketProduto(item)}
-                    disabled={saldo < item.preco || loadingTicket}
-                  >
-                    <Text style={styles.ticketText}>
-                      {loadingTicket ? '...' : 'Comprar Vale'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.carrinhoAddButton}
+                  onPress={() => adicionarAoCarrinho(item)}
+                >
+                  <Text style={styles.carrinhoAddText}>+ Carrinho</Text>
+                </TouchableOpacity>
+                
               </View>
             </View>
           )}
@@ -456,6 +422,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 3,
+  },
+  carrinhoAddText:{
+    color: '#005CA9',
+    fontWeight: 'bold',
+    border: '1px solid #005CA9',
+    paddingVertical: 6,
+    backgroundColor: '#E6F0FF',
+    borderRadius: 8,
   },
   ticketsButton: {
     padding: 12,
