@@ -21,10 +21,10 @@ export default function Home({ route, navigation }) {
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
 
-  // Use o contexto do tema
+  
   const { darkMode } = useTheme();
 
-  // Hook para tickets
+ 
   const { 
     gerarTicketGratuito, 
     comprarTicket,
@@ -32,7 +32,7 @@ export default function Home({ route, navigation }) {
     loading: loadingTicket 
   } = useCantinaTickets();
 
-  // Cores oficiais do SENAI com suporte a tema escuro
+  
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
@@ -49,7 +49,7 @@ export default function Home({ route, navigation }) {
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
       
-      // ✅ INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
+     
       console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
       inicializarTicketBoasVindas(route.params.usuario.id);
     } else {
@@ -110,7 +110,7 @@ export default function Home({ route, navigation }) {
     }
   }
 
-  // FUNÇÃO PARA PEGAR TICKET GRATUITO
+ 
   async function pegarTicketGratuito(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
 
@@ -136,6 +136,30 @@ export default function Home({ route, navigation }) {
   }
 
   
+  async function comprarTicketProduto(produto) {
+    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
+    
+    Alert.alert(
+      'Comprar Vale',
+      `Deseja comprar um vale para ${produto.nome} por R$ ${produto.preco}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Comprar Vale', 
+          onPress: async () => {
+            const resultado = await comprarTicket(produto.id, usuario.id, saldo);
+            if (resultado) {
+              setSaldo(resultado.novoSaldo);
+              navigation.navigate('TicketDigital', { 
+                ticket: resultado.ticket,
+                usuario: { ...usuario, saldo: resultado.novoSaldo }
+              });
+            }
+          }
+        }
+      ]
+    );
+  }
 
   function irParaCarrinho() {
     if (carrinho.length === 0) {
@@ -162,13 +186,13 @@ export default function Home({ route, navigation }) {
     navigation.navigate('MeusTickets', { usuario });
   }
 
-  // FUNÇÃO PARA VERIFICAR SE PRODUTO ACEITA TICKET
+  
   function produtoAceitaTicket(produto) {
-    // Produtos com código P001, P002, P003, etc geram tickets
+  
     return produto.codigo?.startsWith('P00');
   }
 
-  // Estilos dinâmicos baseados no tema
+  
   const dynamicStyles = {
     container: {
       backgroundColor: CORES_SENAI.azul_claro,
@@ -188,7 +212,7 @@ export default function Home({ route, navigation }) {
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-      {/* HEADER COM IDENTIDADE VISUAL DO SENAI */}
+      
       <View style={[styles.header, dynamicStyles.header]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
@@ -256,7 +280,7 @@ export default function Home({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* SEÇÃO DE PRODUTOS */}
+      
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
           🛍️ Produtos Disponíveis
@@ -293,14 +317,14 @@ export default function Home({ route, navigation }) {
                   </Text>
                 )}
                 
-                {/* INDICADOR DE TICKET GRATUITO */}
+              
                 {produtoAceitaTicket(item) && (
                   <Text style={styles.ticketGratuitoInfo}>🎫 Disponível como Vale</Text>
                 )}
               </View>
 
               <View style={styles.botoesContainer}>
-                {/* BOTÃO EXISTENTE - COMPRAR DIRETO */}
+               
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
@@ -315,7 +339,7 @@ export default function Home({ route, navigation }) {
                   </Text>
                 </TouchableOpacity>
 
-                {/* BOTÃO TICKET GRATUITO (apenas para produtos que aceitam) */}
+             
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[styles.ticketGratuitoButton, { backgroundColor: CORES_SENAI.laranja }]}
@@ -327,13 +351,23 @@ export default function Home({ route, navigation }) {
                     </Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity
-                  style={styles.carrinhoAddButton}
-                  onPress={() => adicionarAoCarrinho(item)}
-                >
-                  <Text style={styles.carrinhoAddText}>+ Carrinho</Text>
-                </TouchableOpacity>
-                
+
+              
+                {produtoAceitaTicket(item) && (
+                  <TouchableOpacity
+                    style={[
+                      styles.ticketButton,
+                      { backgroundColor: CORES_SENAI.azul_escuro },
+                      saldo < item.preco && styles.comprarButtonDisabled,
+                    ]}
+                    onPress={() => comprarTicketProduto(item)}
+                    disabled={saldo < item.preco || loadingTicket}
+                  >
+                    <Text style={styles.ticketText}>
+                      {loadingTicket ? '...' : 'Comprar Vale'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           )}
