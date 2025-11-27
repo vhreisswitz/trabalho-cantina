@@ -1,35 +1,27 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert, 
-  StatusBar 
-} from 'react-native';
-import { supabase } from '../services/database';
-import { useTheme } from '../context/themeContext';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { addRecarga } from '../services/database';
+import { useSaldo } from '../hooks/useSaldo';
 
 export default function RecarregarSaldo({ route, navigation }) {
   const { usuario, onSaldoAtualizado } = route.params;
-  
-  const { darkMode } = useTheme();
+  const { saldo, atualizarSaldo } = useSaldo();
 
   const recarregar = async (valor) => {
     try {
-      const novoSaldo = usuario.saldo + valor;
+      const transacao = await addRecarga(usuario.id, valor);
+      
+      if (transacao) {
+        const novoSaldo = saldo + valor;
+        atualizarSaldo(novoSaldo);
 
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ saldo: novoSaldo })
-        .eq('id', usuario.id);
+        if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
 
-      if (error) throw error;
-
-      if (onSaldoAtualizado) onSaldoAtualizado(novoSaldo);
-
-      Alert.alert('✅ Sucesso', `Saldo atualizado para R$ ${novoSaldo.toFixed(2)}`);
-      navigation.goBack();
+        Alert.alert('✅ Sucesso', `Saldo recarregado com sucesso!\nNovo saldo: R$ ${novoSaldo.toFixed(2)}`);
+        navigation.goBack();
+      } else {
+        throw new Error('Falha ao criar transação');
+      }
     } catch (error) {
       console.error('Erro na recarga:', error);
       Alert.alert('Erro', 'Não foi possível realizar a recarga.');
@@ -50,16 +42,9 @@ export default function RecarregarSaldo({ route, navigation }) {
   };
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
-      
-      <Text style={[styles.title, dynamicStyles.title]}>
-        Adicionar Saldo
-      </Text>
-
-      <Text style={[styles.saldoAtual, { color: darkMode ? '#CBD5E1' : '#5C6B8A' }]}>
-        Saldo atual: R$ {usuario.saldo.toFixed(2)}
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Adicionar Saldo</Text>
+      <Text style={styles.saldoAtual}>Saldo atual: R$ {saldo.toFixed(2)}</Text>
 
       {[5, 10, 20, 50, 100].map((valor) => (
         <TouchableOpacity
@@ -70,14 +55,12 @@ export default function RecarregarSaldo({ route, navigation }) {
           <Text style={styles.botaoTexto}>+ R$ {valor}</Text>
         </TouchableOpacity>
       ))}
-
+      
       <TouchableOpacity
-        style={[styles.voltarButton, { backgroundColor: darkMode ? '#334155' : '#E2E8F0' }]}
+        style={styles.botaoVoltar}
         onPress={() => navigation.goBack()}
       >
-        <Text style={[styles.voltarText, { color: darkMode ? '#FFFFFF' : '#000000' }]}>
-          Voltar
-        </Text>
+        <Text style={styles.botaoVoltarTexto}>Voltar</Text>
       </TouchableOpacity>
     </View>
   );
@@ -91,19 +74,20 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
-    textAlign: 'center',
+    color: '#007AFF',
   },
   saldoAtual: {
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 30,
-    textAlign: 'center',
+    color: '#666',
   },
   botao: {
-    padding: 18,
-    borderRadius: 12,
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
     marginVertical: 8,
     width: 200,
     alignItems: 'center',
@@ -118,15 +102,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  voltarButton: {
-    padding: 15,
-    borderRadius: 10,
+  botaoVoltar: {
     marginTop: 20,
-    width: 150,
-    alignItems: 'center',
+    padding: 12,
   },
-  voltarText: {
+  botaoVoltarTexto: {
+    color: '#007AFF',
     fontSize: 16,
-    fontWeight: '600',
   },
 });

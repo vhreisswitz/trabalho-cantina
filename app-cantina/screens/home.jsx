@@ -6,33 +6,27 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
-  Image,
-  StatusBar
+  ActivityIndicator
 } from 'react-native';
-import { supabase } from '../services/database';
+import { supabase, addCompra } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
-import { useTheme } from '../context/themeContext';
+import { useSaldo } from '../hooks/useSaldo';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
-  const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
 
-  
-  const { darkMode } = useTheme();
+  const { saldo, atualizarSaldo, definirUsuario } = useSaldo();
 
- 
-  const { 
-    gerarTicketGratuito, 
+  const {
+    gerarTicketGratuito,
     comprarTicket,
     inicializarTicketBoasVindas,
-    loading: loadingTicket 
+    loading: loadingTicket
   } = useCantinaTickets();
 
-  
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
@@ -46,12 +40,11 @@ export default function Home({ route, navigation }) {
 
   useEffect(() => {
     if (route.params?.usuario) {
-      setUsuario(route.params.usuario);
-      setSaldo(route.params.usuario.saldo || 0);
-      
-     
+      const usuarioData = route.params.usuario;
+      setUsuario(usuarioData);
+      definirUsuario(usuarioData.id);
       console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
-      inicializarTicketBoasVindas(route.params.usuario.id);
+      inicializarTicketBoasVindas(usuarioData.id);
     } else {
       Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
       navigation.navigate('Login');
@@ -85,32 +78,28 @@ export default function Home({ route, navigation }) {
     }
 
     try {
-      const novoSaldo = saldo - produto.preco;
+      const transacao = await addCompra(usuario.id, produto.preco, produto.nome, 'Cantina SENAI');
 
-      const { error } = await supabase
-        .from('usuarios')
-        .update({ saldo: novoSaldo })
-        .eq('id', usuario.id);
+      if (transacao) {
+        const novoSaldo = saldo - produto.preco;
+        atualizarSaldo(novoSaldo);
 
-      if (error) throw error;
-
-      await supabase.from('cantina_transacoes').insert({
-        usuario_id: usuario.id,
-        produto_id: produto.id,
-        tipo: 'compra',
-        valor: produto.preco,
-        descricao: `Compra: ${produto.nome}`,
-      });
-
-      setSaldo(novoSaldo);
-      Alert.alert('✅ Sucesso', `Você comprou: ${produto.nome}`);
+        Alert.alert('✅ Sucesso', `Você comprou: ${produto.nome}\nNovo saldo: R$ ${novoSaldo.toFixed(2)}`);
+      } else {
+        throw new Error('Falha ao criar transação');
+      }
     } catch (error) {
       console.error('Erro na compra:', error);
       Alert.alert('Erro', 'Não foi possível realizar a compra.');
     }
   }
 
- 
+  function irParaExtrato() {
+    navigation.navigate('Extrato', {
+      usuario: { ...usuario, saldo }
+    });
+  }
+
   async function pegarTicketGratuito(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
 
@@ -119,12 +108,12 @@ export default function Home({ route, navigation }) {
       `Deseja pegar um vale GRATUITO para ${produto.nome}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Pegar Vale Grátis', 
+        {
+          text: 'Pegar Vale Grátis',
           onPress: async () => {
             const ticket = await gerarTicketGratuito(produto.id, usuario.id);
             if (ticket) {
-              navigation.navigate('TicketDigital', { 
+              navigation.navigate('TicketDigital', {
                 ticket,
                 usuario
               });
@@ -135,22 +124,21 @@ export default function Home({ route, navigation }) {
     );
   }
 
-  
   async function comprarTicketProduto(produto) {
     if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
-    
+
     Alert.alert(
       'Comprar Vale',
       `Deseja comprar um vale para ${produto.nome} por R$ ${produto.preco}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Comprar Vale', 
+        {
+          text: 'Comprar Vale',
           onPress: async () => {
             const resultado = await comprarTicket(produto.id, usuario.id, saldo);
             if (resultado) {
-              setSaldo(resultado.novoSaldo);
-              navigation.navigate('TicketDigital', { 
+              atualizarSaldo(resultado.novoSaldo);
+              navigation.navigate('TicketDigital', {
                 ticket: resultado.ticket,
                 usuario: { ...usuario, saldo: resultado.novoSaldo }
               });
@@ -166,12 +154,12 @@ export default function Home({ route, navigation }) {
       Alert.alert('Carrinho vazio', 'Adicione alguns produtos ao carrinho primeiro!');
       return;
     }
-    
-    navigation.navigate('Carrinho', { 
-      usuario, 
+
+    navigation.navigate('Carrinho', {
+      usuario,
       carrinho,
       onCompraFinalizada: (novoSaldo) => {
-        setSaldo(novoSaldo);
+        atualizarSaldo(novoSaldo);
         setCarrinho([]);
         setUsuario(prevUsuario => ({ ...prevUsuario, saldo: novoSaldo }));
       }
@@ -186,9 +174,16 @@ export default function Home({ route, navigation }) {
     navigation.navigate('MeusTickets', { usuario });
   }
 
-  
+  function irParaRecarregarSaldo() {
+    navigation.navigate('RecarregarSaldo', {
+      usuario,
+      onSaldoAtualizado: (novoSaldo) => {
+        atualizarSaldo(novoSaldo);
+      },
+    });
+  }
+
   function produtoAceitaTicket(produto) {
-  
     return produto.codigo?.startsWith('P00');
   }
 
@@ -209,11 +204,8 @@ export default function Home({ route, navigation }) {
   };
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
-      
-      
-      <View style={[styles.header, dynamicStyles.header]}>
+    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
+      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoSenai}>SENAI</Text>
@@ -231,10 +223,17 @@ export default function Home({ route, navigation }) {
               R$ {saldo.toFixed(2)}
             </Text>
           </View>
-          
+
           <View style={styles.headerButtons}>
-            <TouchableOpacity 
-              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]} 
+            <TouchableOpacity
+              style={[styles.extratoButton, { backgroundColor: CORES_SENAI.branco }]}
+              onPress={irParaExtrato}
+            >
+              <Text style={[styles.extratoIcon, { color: CORES_SENAI.azul_principal }]}>📊</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaCarrinho}
             >
               <Text style={[styles.carrinhoIcon, { color: CORES_SENAI.azul_principal }]}>🛒</Text>
@@ -245,15 +244,15 @@ export default function Home({ route, navigation }) {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.ticketsButton, { backgroundColor: CORES_SENAI.branco }]} 
+            <TouchableOpacity
+              style={[styles.ticketsButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaMeusTickets}
             >
               <Text style={[styles.ticketsIcon, { color: CORES_SENAI.azul_principal }]}>🎫</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]} 
+            <TouchableOpacity
+              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]}
               onPress={irParaConfiguracoes}
             >
               <Text style={[styles.settingsIcon, { color: CORES_SENAI.azul_principal }]}>⚙️</Text>
@@ -262,25 +261,15 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-      {/* BOTÕES CENTRALIZADOS */}
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
           style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
-          onPress={() =>
-            navigation.navigate('RecarregarSaldo', {
-              usuario,
-              onSaldoAtualizado: (novoSaldo) => {
-                setSaldo(novoSaldo);
-                setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo }));
-              },
-            })
-          }
+          onPress={irParaRecarregarSaldo}
         >
           <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
         </TouchableOpacity>
       </View>
 
-      
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
           🛍️ Produtos Disponíveis
@@ -316,15 +305,13 @@ export default function Home({ route, navigation }) {
                     {item.descricao}
                   </Text>
                 )}
-                
-              
+
                 {produtoAceitaTicket(item) && (
                   <Text style={styles.ticketGratuitoInfo}>🎫 Disponível como Vale</Text>
                 )}
               </View>
 
               <View style={styles.botoesContainer}>
-               
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
@@ -339,7 +326,6 @@ export default function Home({ route, navigation }) {
                   </Text>
                 </TouchableOpacity>
 
-             
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[styles.ticketGratuitoButton, { backgroundColor: CORES_SENAI.laranja }]}
@@ -352,7 +338,6 @@ export default function Home({ route, navigation }) {
                   </TouchableOpacity>
                 )}
 
-              
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[
@@ -447,6 +432,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 4,
+  },
+  extratoButton: {
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  extratoIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   carrinhoButton: {
     padding: 12,
