@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { supabase } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
-// import { useTheme } from '../context/themeContext';
+import { useTheme } from '../context/themeContext';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
