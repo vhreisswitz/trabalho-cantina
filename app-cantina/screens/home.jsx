@@ -7,35 +7,47 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image
 } from 'react-native';
 import { supabase } from '../services/database';
-import { useTheme } from '../ThemeContext'; // LINHA ADICIONADA
+import { useTheme } from '../ThemeContext';
 
 export default function Home({ route, navigation }) {
-  const { isDarkMode } = useTheme(); // LINHA ADICIONADA
+  const { isDarkMode } = useTheme();
+
+  // 🎨 Paleta SENAI refinada
+  const CORES = {
+    fundo: isDarkMode ? '#0D0D0F' : '#F2F4F8',
+    card: isDarkMode ? '#18181B' : '#FFFFFF',
+    borda: isDarkMode ? '#2A2A2D' : '#D9E2EC',
+    texto: isDarkMode ? '#F2F2F7' : '#1A1A1C',
+    textoSec: isDarkMode ? '#9C9CA3' : '#5C6B8A',
+    azul: '#005CA9',
+    laranja: '#FF6B35',
+  };
+
+  const DS = {
+    fundo: { backgroundColor: CORES.fundo },
+    card: {
+      backgroundColor: CORES.card,
+      borderColor: CORES.borda,
+      shadowColor: isDarkMode ? '#000' : '#8AA3C0',
+    },
+    texto: { color: CORES.texto },
+    textoSec: { color: CORES.textoSec },
+  };
+
   const [produtos, setProdutos] = useState([]);
   const [saldo, setSaldo] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [carrinho, setCarrinho] = useState([]);
 
-  // Cores oficiais do SENAI - ALTERADAS para tema escuro
-  const CORES_SENAI = {
-    azul_principal: '#005CA9',
-    azul_escuro: '#003A6B',
-    azul_claro: isDarkMode ? '#1C1C1E' : '#E6F0FF', // ALTERADO
-    branco: isDarkMode ? '#1C1C1E' : '#FFFFFF', // ALTERADO
-    laranja: '#FF6B35',
-    cinza: '#5C6B8A'
-  };
-
   useEffect(() => {
     if (route.params?.usuario) {
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
     } else {
-      Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
+      Alert.alert('Erro', 'Usuário não identificado.');
       navigation.navigate('Login');
       return;
     }
@@ -47,8 +59,7 @@ export default function Home({ route, navigation }) {
       const { data, error } = await supabase.from('cantina_produtos').select('*');
       if (error) throw error;
       setProdutos(data);
-    } catch (error) {
-      console.error('Erro ao carregar produtos:', error);
+    } catch {
       Alert.alert('Erro', 'Não foi possível carregar os produtos.');
     } finally {
       setCarregando(false);
@@ -56,14 +67,16 @@ export default function Home({ route, navigation }) {
   }
 
   function adicionarAoCarrinho(produto) {
-    setCarrinho(prevCarrinho => [...prevCarrinho, produto]);
-    Alert.alert('✅ Adicionado', `${produto.nome} foi adicionado ao carrinho!`);
+    setCarrinho(prev => [...prev, produto]);
+    Alert.alert('Adicionado', `${produto.nome} foi para o carrinho!`);
   }
 
   async function comprarProduto(produto) {
-    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
+    if (!usuario) return;
+
     if (saldo < produto.preco) {
-      return Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco} para comprar este produto.`);
+      Alert.alert('Saldo insuficiente', `Você precisa de R$ ${produto.preco}.`);
+      return;
     }
 
     try {
@@ -85,16 +98,15 @@ export default function Home({ route, navigation }) {
       });
 
       setSaldo(novoSaldo);
-      Alert.alert('✅ Sucesso', `Você comprou: ${produto.nome}`);
-    } catch (error) {
-      console.error('Erro na compra:', error);
+      Alert.alert('Sucesso', `Você comprou: ${produto.nome}`);
+    } catch {
       Alert.alert('Erro', 'Não foi possível realizar a compra.');
     }
   }
 
   function irParaCarrinho() {
     if (carrinho.length === 0) {
-      Alert.alert('Carrinho vazio', 'Adicione alguns produtos ao carrinho primeiro!');
+      Alert.alert('Carrinho vazio', 'Adicione produtos primeiro.');
       return;
     }
 
@@ -104,134 +116,98 @@ export default function Home({ route, navigation }) {
       onCompraFinalizada: (novoSaldo) => {
         setSaldo(novoSaldo);
         setCarrinho([]);
-        setUsuario(prevUsuario => ({ ...prevUsuario, saldo: novoSaldo }));
+        setUsuario(prev => ({ ...prev, saldo: novoSaldo }));
       }
     });
   }
 
-  function irParaConfiguracoes() {
-    navigation.navigate('Configuracoes', { usuario });
-  }
-
   return (
-    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
-      {/* HEADER COM IDENTIDADE VISUAL DO SENAI */}
-      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
+    <View style={[styles.container, DS.fundo]}>
+
+      {/* ===== CABEÇALHO ===== */}
+      <View style={[styles.header, { backgroundColor: CORES.azul }]}>
+
         <View style={styles.headerLeft}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoSenai}>SENAI</Text>
-            <Text style={styles.logoPalhoca}>PALHOÇA</Text>
-          </View>
+          <Text style={styles.logoSenai}>SENAI</Text>
+          <Text style={styles.logoPalhoca}>PALHOÇA</Text>
           <Text style={styles.subtitle}>
-            Seja bem-vindo{usuario ? `, ${usuario.nome}` : ''}!
+            {usuario ? `Bem-vindo, ${usuario.nome}!` : 'Bem-vindo!'}
           </Text>
         </View>
 
+        {/* Saldo + botões */}
         <View style={styles.headerRight}>
-          <View style={[styles.saldoBox, { backgroundColor: CORES_SENAI.branco }]}>
-            <Text style={styles.saldoLabel}>Saldo disponível</Text>
-            <Text style={[styles.saldoValor, { color: CORES_SENAI.azul_principal }]}>
+
+          <View style={[styles.saldoBox, DS.card]}>
+            <Text style={[styles.saldoLabel, DS.textoSec]}>Saldo</Text>
+            <Text style={[styles.saldoValor, { color: CORES.azul }]}>
               R$ {saldo.toFixed(2)}
             </Text>
           </View>
 
           <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]}
-              onPress={irParaCarrinho}
-            >
-              <Text style={[styles.carrinhoIcon, { color: CORES_SENAI.azul_principal }]}>🛒</Text>
-              {carrinho.length > 0 && (
-                <View style={[styles.carrinhoBadge, { backgroundColor: CORES_SENAI.laranja }]}>
-                  <Text style={styles.carrinhoBadgeText}>{carrinho.length}</Text>
-                </View>
-              )}
+            <TouchableOpacity style={[styles.iconButton, DS.card]} onPress={irParaCarrinho}>
+              <Text style={[styles.iconText, DS.texto]}>🛒</Text>
             </TouchableOpacity>
 
-            {/* BOTÃO SETTINGS */}
             <TouchableOpacity
-              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]}
-              onPress={irParaConfiguracoes}
+              style={[styles.iconButton, DS.card]}
+              onPress={() => navigation.navigate('Configuracoes')}
             >
-              <Text style={[styles.settingsIcon, { color: CORES_SENAI.azul_principal }]}>⚙️</Text>
+              <Text style={[styles.iconText, DS.texto]}>⚙️</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
-      {/* BOTÕES CENTRALIZADOS */}
-      <View style={styles.botoesSuperiores}>
-        <TouchableOpacity
-          style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
-          onPress={() =>
-            navigation.navigate('RecarregarSaldo', {
-              usuario,
-              onSaldoAtualizado: (novoSaldo) => {
-                setSaldo(novoSaldo);
-                setUsuario((prevUsuario) => ({ ...prevUsuario, saldo: novoSaldo }));
-              },
-            })
-          }
-        >
-          <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* SEÇÃO DE PRODUTOS */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
-          🛍️ Produtos Disponíveis
-        </Text>
-        <Text style={[styles.sectionSubtitle, { color: isDarkMode ? '#98989F' : '#5C6B8A' }]}> {/* ALTERADO */}
-          Cantina SENAI - Alimentação de qualidade
-        </Text>
-      </View>
+      {/* ===== PRODUTOS ===== */}
+      <Text style={[styles.sectionTitle, DS.texto]}>🛍️ Produtos Disponíveis</Text>
+      <Text style={[styles.sectionSubtitle, DS.textoSec]}>
+        Cantina SENAI • Qualidade e rapidez
+      </Text>
 
       {carregando ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={CORES_SENAI.azul_principal} />
-          <Text style={[styles.loadingText, { color: CORES_SENAI.azul_escuro }]}>
-            Carregando produtos...
-          </Text>
-        </View>
+        <ActivityIndicator size="large" color={CORES.azul} />
       ) : (
         <FlatList
           data={produtos}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.flatListContent}
+          keyExtractor={(i) => i.id.toString()}
+          contentContainerStyle={{ padding: 16, paddingBottom: 50 }}
           renderItem={({ item }) => (
-            <View style={[styles.produtoCard, { backgroundColor: CORES_SENAI.branco }]}>
-              <View style={styles.produtoInfo}>
-                <Text style={[styles.produtoNome, { color: CORES_SENAI.azul_escuro }]}>
-                  {item.nome}
-                </Text>
-                <Text style={[styles.produtoPreco, { color: CORES_SENAI.azul_principal }]}>
+            <View style={[styles.card, DS.card]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.produtoNome, DS.texto]}>{item.nome}</Text>
+                <Text style={[styles.produtoPreco, { color: CORES.azul }]}>
                   R$ {item.preco.toFixed(2)}
                 </Text>
-                {item.descricao && (
-                  <Text style={[styles.produtoDescricao, { color: isDarkMode ? '#98989F' : '#5C6B8A' }]}>{item.descricao}</Text>
-                )}
               </View>
 
-              <View style={styles.botoesContainer}>
+              {item.descricao && (
+                <Text style={[styles.produtoDescricao, DS.textoSec]}>
+                  {item.descricao}
+                </Text>
+              )}
+
+              <View style={styles.buttonsRow}>
+                {/* ADD CARRINHO */}
                 <TouchableOpacity
-                  style={[styles.carrinhoAddButton, { backgroundColor: CORES_SENAI.laranja }]}
+                  style={[styles.addCartBtn, { backgroundColor: CORES.laranja }]}
                   onPress={() => adicionarAoCarrinho(item)}
                 >
-                  <Text style={styles.carrinhoAddText}>+ Carrinho</Text>
+                  <Text style={styles.addCartText}>+ Carrinho</Text>
                 </TouchableOpacity>
 
+                {/* COMPRAR */}
                 <TouchableOpacity
                   style={[
-                    styles.comprarButton,
-                    { backgroundColor: CORES_SENAI.azul_principal },
-                    saldo < item.preco && styles.comprarButtonDisabled,
+                    styles.buyBtn,
+                    { backgroundColor: saldo < item.preco ? '#444' : CORES.azul }
                   ]}
-                  onPress={() => comprarProduto(item)}
                   disabled={saldo < item.preco}
+                  onPress={() => comprarProduto(item)}
                 >
-                  <Text style={styles.comprarText}>
-                    {saldo < item.preco ? 'Saldo Insuficiente' : 'Comprar Agora'}
+                  <Text style={styles.buyText}>
+                    {saldo < item.preco ? 'Indisponível' : 'Comprar'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -243,232 +219,106 @@ export default function Home({ route, navigation }) {
   );
 }
 
-// OS ESTILOS PERMANECEM EXATAMENTE IGUAIS
+/* ===========================================
+              ESTILOS OTIMIZADOS
+=========================================== */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+
   header: {
+    paddingTop: 55,
+    paddingBottom: 25,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
+    elevation: 8,
+  },
+
+  headerLeft: { flex: 1 },
+  logoSenai: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 1 },
+  logoPalhoca: { color: '#fff', fontSize: 14, opacity: 0.9 },
+  subtitle: { color: '#fff', marginTop: 6, fontSize: 13, opacity: 0.85 },
+
+  headerRight: { alignItems: 'flex-end' },
+
+  saldoBox: {
+    padding: 14,
+    borderRadius: 14,
+    minWidth: 130,
+    marginBottom: 10,
+    borderWidth: 1,
+  },
+
+  saldoLabel: { fontSize: 12, fontWeight: '600' },
+  saldoValor: { fontSize: 18, fontWeight: '800' },
+
+  headerButtons: { flexDirection: 'row', gap: 12 },
+
+  iconButton: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     elevation: 5,
   },
-  headerLeft: {
-    flex: 1,
-  },
-  logoContainer: {
-    marginBottom: 8,
-  },
-  logoSenai: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  logoPalhoca: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  subtitle: {
-    color: '#FFFFFF',
-    marginTop: 2,
-    fontSize: 14,
-    opacity: 0.9,
-  },
-  headerRight: {
-    alignItems: 'flex-end',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  saldoBox: {
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    minWidth: 100,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saldoLabel: {
-    fontSize: 12,
-    color: '#5C6B8A',
-    fontWeight: '600',
-  },
-  saldoValor: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  carrinhoButton: {
-    padding: 12,
-    borderRadius: 12,
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  settingsButton: {
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  carrinhoIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  settingsIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  carrinhoBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  carrinhoBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  botoesSuperiores: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    alignItems: 'center',
-  },
-  adicionarSaldoButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  adicionarSaldoText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
+  iconText: { fontSize: 18 },
+
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
     textAlign: 'center',
+    fontSize: 22,
+    marginTop: 22,
+    fontWeight: '800',
   },
+
   sectionSubtitle: {
-    fontSize: 14,
     textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
+    marginBottom: 15,
+    fontSize: 13,
     fontWeight: '500',
   },
-  flatListContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
+
+  card: {
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    elevation: 6,
   },
-  produtoCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#005CA9',
-  },
-  produtoInfo: {
-    marginBottom: 12,
-  },
-  produtoNome: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  produtoPreco: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  produtoDescricao: {
-    fontSize: 13,
-    fontStyle: 'italic',
-  },
-  botoesContainer: {
+
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 10,
+    marginBottom: 6,
   },
-  carrinhoAddButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+
+  produtoNome: { fontSize: 18, fontWeight: '700' },
+  produtoPreco: { fontSize: 18, fontWeight: '800' },
+  produtoDescricao: { marginTop: 6, fontSize: 13, lineHeight: 18, fontStyle: 'italic' },
+
+  buttonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 14,
+  },
+
+  addCartBtn: {
     flex: 1,
+    padding: 12,
+    borderRadius: 10,
   },
-  carrinhoAddText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 13,
+  addCartText: {
     textAlign: 'center',
+    color: '#fff',
+    fontWeight: '700',
   },
-  comprarButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+
+  buyBtn: {
     flex: 1,
+    padding: 12,
+    borderRadius: 10,
   },
-  comprarButtonDisabled: {
-    backgroundColor: '#CCCCCC',
-  },
-  comprarText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 13,
+  buyText: {
+    color: '#fff',
+    fontWeight: '700',
     textAlign: 'center',
   },
 });
