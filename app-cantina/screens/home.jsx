@@ -7,9 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Image,
-  StatusBar
-  Image,
   StatusBar
 } from 'react-native';
 import { supabase } from '../services/database';
@@ -24,10 +21,8 @@ export default function Home({ route, navigation }) {
   const [carrinho, setCarrinho] = useState([]);
 
   // Use o contexto do tema
-  const { darkMode } = useTheme();
-
-  // Use o contexto do tema
-  const { darkMode } = useTheme();
+  // const { darkMode } = useTheme();
+  const darkMode = false; // Temporário até configurar o tema
 
   // Hook para tickets
   const { 
@@ -38,18 +33,12 @@ export default function Home({ route, navigation }) {
   } = useCantinaTickets();
 
   // Cores oficiais do SENAI com suporte a tema escuro
-  // Cores oficiais do SENAI com suporte a tema escuro
   const CORES_SENAI = {
     azul_principal: '#005CA9',
     azul_escuro: '#003A6B',
     azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
     branco: darkMode ? '#1E293B' : '#FFFFFF',
-    azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
-    branco: darkMode ? '#1E293B' : '#FFFFFF',
     laranja: '#FF6B35',
-    cinza: darkMode ? '#94A3B8' : '#5C6B8A',
-    texto: darkMode ? '#FFFFFF' : '#000000',
-    texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A'
     cinza: darkMode ? '#94A3B8' : '#5C6B8A',
     texto: darkMode ? '#FFFFFF' : '#000000',
     texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A'
@@ -60,7 +49,7 @@ export default function Home({ route, navigation }) {
       setUsuario(route.params.usuario);
       setSaldo(route.params.usuario.saldo || 0);
       
-      //  INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
+      // INICIALIZAR TICKET DE BOAS-VINDAS AUTOMATICAMENTE
       console.log('🏠 Home carregada - Inicializando ticket de boas-vindas...');
       inicializarTicketBoasVindas(route.params.usuario.id);
     } else {
@@ -219,31 +208,11 @@ export default function Home({ route, navigation }) {
     }
   };
 
-  // Estilos dinâmicos baseados no tema
-  const dynamicStyles = {
-    container: {
-      backgroundColor: CORES_SENAI.azul_claro,
-    },
-    header: {
-      backgroundColor: CORES_SENAI.azul_principal,
-    },
-    text: {
-      color: CORES_SENAI.texto,
-    },
-    textSecundario: {
-      color: CORES_SENAI.texto_secundario,
-    }
-  };
-
   return (
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
-      
       {/* HEADER COM IDENTIDADE VISUAL DO SENAI */}
-      <View style={[styles.header, dynamicStyles.header]}>
       <View style={[styles.header, dynamicStyles.header]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
@@ -293,7 +262,6 @@ export default function Home({ route, navigation }) {
         </View>
       </View>
 
-      
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
           style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
@@ -317,7 +285,6 @@ export default function Home({ route, navigation }) {
           🛍️ Produtos Disponíveis
         </Text>
         <Text style={[styles.sectionSubtitle, { color: CORES_SENAI.texto_secundario }]}>
-        <Text style={[styles.sectionSubtitle, { color: CORES_SENAI.texto_secundario }]}>
           Cantina SENAI - Alimentação de qualidade
         </Text>
       </View>
@@ -338,16 +305,12 @@ export default function Home({ route, navigation }) {
             <View style={[styles.produtoCard, { backgroundColor: CORES_SENAI.branco }]}>
               <View style={styles.produtoInfo}>
                 <Text style={[styles.produtoNome, { color: CORES_SENAI.texto }]}>
-                <Text style={[styles.produtoNome, { color: CORES_SENAI.texto }]}>
                   {item.nome}
                 </Text>
                 <Text style={[styles.produtoPreco, { color: CORES_SENAI.azul_principal }]}>
                   R$ {item.preco.toFixed(2)}
                 </Text>
                 {item.descricao && (
-                  <Text style={[styles.produtoDescricao, { color: CORES_SENAI.texto_secundario }]}>
-                    {item.descricao}
-                  </Text>
                   <Text style={[styles.produtoDescricao, { color: CORES_SENAI.texto_secundario }]}>
                     {item.descricao}
                   </Text>
