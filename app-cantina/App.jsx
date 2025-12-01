@@ -12,117 +12,89 @@ import Carrinho from './screens/carrinho';
 import Configuracoes from './screens/settings';
 import Sobre from './screens/about';
 import Extrato from './screens/extrato';
-import AdminDashboard from './screens/admin-dashboard';
-import ManageProducts from './screens/manage-products';
-import ManageUsers from './screens/manage-users';
-import SalesReports from './screens/sales-reports';
-import Perfil from './screens/Perfil';
-import ExtratoScreen from './screens/extrato';
+import { PointerType } from 'react-native-gesture-handler';
+import MeusTickets from './screens/meusTickets';
+import TicketDigital from './screens/TicketDigital';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <ThemeProvider>
-      <SaldoProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Login"
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-              gestureEnabled: true,
-              fullScreenGestureEnabled: true,
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
+          }}
+        >
+          <Stack.Screen
+            name="Login"
+            component={Login}
+            options={{
+              animation: 'fade', // Transição suave para o login
             }}
-          >
-            <Stack.Screen 
-              name="Login" 
-              component={Login}
-              options={{
-                animation: 'fade',
-              }}
-            />
-            <Stack.Screen 
-              name="Home" 
-              component={Home}
-              options={{
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen 
-              name="RecarregarSaldo" 
-              component={RecarregarSaldo}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="Carrinho" 
-              component={Carrinho}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="Configuracoes" 
-              component={Configuracoes}
-              options={{
-                animation: 'slide_from_left',
-              }}
-            />
-            <Stack.Screen 
-              name="Sobre" 
-              component={Sobre}
-              options={{
-                animation: 'fade_from_bottom',
-              }}
-            />
-            <Stack.Screen 
-              name="Perfil" 
-              component={Perfil}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="Extrato" 
-              component={ExtratoScreen}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="AdminDashboard" 
-              component={AdminDashboard}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="ManageProducts" 
-              component={ManageProducts}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="ManageUsers" 
-              component={ManageUsers}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-            <Stack.Screen 
-              name="SalesReports" 
-              component={SalesReports}
-              options={{
-                animation: 'slide_from_right',
-              }}
-            />
-          </Stack.Navigator>
-          <StatusBar style="auto" />
-        </NavigationContainer>
-      </SaldoProvider>
+          />
+          <Stack.Screen
+            name="Home"
+            component={Home}
+            options={{
+              animation: 'slide_from_bottom', // Entrada da home vindo de baixo
+            }}
+          />
+          <Stack.Screen
+            name="RecarregarSaldo"
+            component={RecarregarSaldo}
+            options={{
+              animation: 'slide_from_right', // Mantém o deslize da direita
+            }}
+          />
+          <Stack.Screen
+            name="Carrinho"
+            component={Carrinho}
+            options={{
+              animation: 'slide_from_right', // Mantém o deslize da direita
+            }}
+          />
+          <Stack.Screen
+            name="Configuracoes"
+            component={Configuracoes}
+            options={{
+              animation: 'slide_from_left', // Diferente para configurações
+            }}
+          />
+          <Stack.Screen
+            name="Sobre"
+            component={Sobre}
+            options={{
+              animation: 'fade_from_bottom', // Transição suave para sobre
+            }}
+          />
+          <Stack.Screen
+            name='Extrato'
+            component={Extrato}
+            options={{
+              animation: 'slide_from_right', // Transição padrão para extrato
+            }}
+          />
+          <Stack.Screen 
+            name="MeusTickets" 
+            component={MeusTickets}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="TicketDigital"
+            component={TicketDigital}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+        {/* ✅ FIM DO NAVIGATOR */}
+
+        <StatusBar style="auto" />
+      </NavigationContainer>
     </ThemeProvider>
   );
 }
