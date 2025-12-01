@@ -13,7 +13,13 @@ import {
   Linking
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { uploadFotoPerfil } from "../utils/fotoPerfil";
+
 import * as ImagePicker from "expo-image-picker";
+
+import * as FileSystem from "expo-file-system";
+import { supabase } from "../services/database"; // ← confira se o nome é esse
+
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -30,10 +36,43 @@ export default function Settings({ navigation, route }) {
   const [profilePhoto, setProfilePhoto] = useState(
     "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face"
   );
-
+  const uploadImageToSupabase = async (uri, userId) => {
+    try {
+      // transforma a imagem em blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
+  
+      const filePath = `${userId}_${Date.now()}.jpg`;
+  
+      const { data, error } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, blob, {
+          contentType: "image/jpeg",
+          upsert: false
+        });
+  
+      if (error) {
+        console.error(error);
+        Alert.alert("Erro", "Falha ao enviar imagem.");
+        return null;
+      }
+  
+      // pega URL pública da imagem
+      const { data: publicUrl } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+  
+      return publicUrl.publicUrl;
+  
+    } catch (err) {
+      console.error("Upload error:", err);
+      return null;
+    }
+  };
+  
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // 📸 TROCAR FOTO DE PERFIL DE VERDADE
+  // 📸 TROCAR FOTO DE PERFIL
   const handleChangePhoto = () => {
     Alert.alert(
       "Mudar Foto de Perfil",
@@ -46,31 +85,48 @@ export default function Settings({ navigation, route }) {
     );
   };
 
+  // Abre câmera (com checagem de permissão)
   const openCamera = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return Alert.alert("Permissão negada", "Ative a câmera.");
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      // permission pode ter .status ou .granted dependendo da versão do expo
+      if ((permission.granted !== undefined && !permission.granted) || permission.status === 'denied') {
+        return Alert.alert("Permissão negada", "Ative a permissão de câmera nas configurações do dispositivo.");
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-      allowsEditing: true,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 1,
+        allowsEditing: true,
+        aspect: [1, 1],
+      });
 
-    if (!result.canceled) {
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
       setProfilePhoto(result.assets[0].uri);
+    } catch (err) {
+      console.error("openCamera error:", err);
+      Alert.alert("Erro", "Não foi possível abrir a câmera.");
     }
   };
 
+  // Abre galeria (com checagem de permissão)
   const openGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return Alert.alert("Permissão negada", "Ative a galeria.");
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if ((permission.granted !== undefined && !permission.granted) || permission.status === 'denied') {
+        return Alert.alert("Permissão negada", "Ative a permissão da galeria nas configurações do dispositivo.");
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      quality: 1,
-      allowsEditing: true,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 1,
+        allowsEditing: true,
+        aspect: [1, 1],
+      });
 
-    if (!result.canceled) {
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
       setProfilePhoto(result.assets[0].uri);
+    } catch (err) {
+      console.error("openGallery error:", err);
+      Alert.alert("Erro", "Não foi possível abrir a galeria.");
     }
   };
 
