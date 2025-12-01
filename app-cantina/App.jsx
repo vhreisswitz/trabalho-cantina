@@ -18,7 +18,7 @@ import ManageProducts from './screens/manage-products';
 import ManageUsers from './screens/manage-users';
 import SalesReports from './screens/sales-reports';
 import TicketDigital from './screens/TicketDigital';
-import MeusTickets from './screens/MeusTickets';
+import MeusTickets from './screens/meusTickets';
 
 const Stack = createNativeStackNavigator();
 
