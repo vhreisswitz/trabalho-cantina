@@ -31,14 +31,12 @@ const Pagamentos = ({ navigation, route }) => {
     name: '',
     expiry: '',
     cvv: '',
-    brand: 'visa',
-    cardName: 'Cartão',
+    cardName: 'Novo Cartão',
   });
 
   const [newPixKey, setNewPixKey] = useState('');
   const [pixKeyType, setPixKeyType] = useState('email');
 
-  // Carregar métodos do AsyncStorage
   useEffect(() => {
     loadPaymentMethods();
     
@@ -56,7 +54,6 @@ const Pagamentos = ({ navigation, route }) => {
       if (storedMethods) {
         setPaymentMethods(JSON.parse(storedMethods));
       } else {
-        // Métodos padrão
         const defaultMethods = [
           {
             id: '1',
@@ -110,7 +107,6 @@ const Pagamentos = ({ navigation, route }) => {
       setPaymentMethods(updatedMethods);
       await savePaymentMethods(updatedMethods);
       
-      // Notificar a tela Settings para atualizar
       if (route.params?.onGoBack) {
         route.params.onGoBack();
       }
@@ -134,12 +130,14 @@ const Pagamentos = ({ navigation, route }) => {
       setPaymentMethods(updatedMethods);
       await savePaymentMethods(updatedMethods);
       
-      // Notificar a tela Settings para atualizar
       if (route.params?.onGoBack) {
         route.params.onGoBack();
       }
+      
+      Alert.alert("Sucesso", "Método removido com sucesso!");
     } catch (error) {
       console.error('Erro ao excluir método:', error);
+      Alert.alert("Erro", "Não foi possível remover o método");
       throw error;
     }
   };
@@ -152,8 +150,10 @@ const Pagamentos = ({ navigation, route }) => {
       }));
       setPaymentMethods(updatedMethods);
       await savePaymentMethods(updatedMethods);
+      Alert.alert("Sucesso", "Método definido como padrão!");
     } catch (error) {
       console.error('Erro ao definir método padrão:', error);
+      Alert.alert("Erro", "Não foi possível definir como padrão");
       throw error;
     }
   };
@@ -179,12 +179,221 @@ const Pagamentos = ({ navigation, route }) => {
     );
   };
 
-  // Restante do código permanece igual...
-  // (Copie as funções handleAddPix, handleSaveCard, etc da sua versão original)
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
-  // ... [mantenha todas as outras funções da sua versão original]
+  const validateCPF = (cpf) => {
+    const cleaned = cpf.replace(/\D/g, '');
+    return cleaned.length === 11;
+  };
 
-  // IMPORTANTE: Remova qualquer referência a usePayment() e use apenas as funções locais
+  const validatePhone = (phone) => {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.length >= 10 && cleaned.length <= 11;
+  };
+
+  const handleAddPix = async () => {
+    let keyToSave = newPixKey.trim();
+    
+    if (!keyToSave) {
+      Alert.alert("Erro", "Digite uma chave PIX válida");
+      return;
+    }
+
+    let isValid = true;
+    let errorMessage = "";
+    
+    switch(pixKeyType) {
+      case 'email':
+        isValid = validateEmail(keyToSave);
+        errorMessage = "Digite um email válido";
+        break;
+      case 'cpf':
+        isValid = validateCPF(keyToSave);
+        errorMessage = "Digite um CPF válido (11 dígitos)";
+        break;
+      case 'phone':
+        isValid = validatePhone(keyToSave);
+        errorMessage = "Digite um telefone válido (10-11 dígitos)";
+        break;
+      case 'random':
+        isValid = keyToSave.length >= 10;
+        errorMessage = "Chave aleatória deve ter pelo menos 10 caracteres";
+        break;
+    }
+
+    if (!isValid) {
+      Alert.alert("Erro", errorMessage);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addPaymentMethod({
+        type: 'pix',
+        brand: 'pix',
+        name: getPixDisplayName(pixKeyType, keyToSave),
+        key: keyToSave,
+        holderName: usuario?.nome || 'Usuário',
+        keyType: pixKeyType,
+      });
+      
+      setPixModalVisible(false);
+      setNewPixKey('');
+      Alert.alert("Sucesso", "Chave PIX adicionada com sucesso!");
+    } catch (error) {
+      console.error('Erro ao adicionar PIX:', error);
+      Alert.alert("Erro", "Não foi possível adicionar a chave PIX");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getPixDisplayName = (type, key) => {
+    switch(type) {
+      case 'email':
+        return 'PIX Email';
+      case 'cpf':
+        return 'PIX CPF';
+      case 'phone':
+        return 'PIX Celular';
+      case 'random':
+        return 'Chave Aleatória';
+      default:
+        return 'Chave PIX';
+    }
+  };
+
+  const handleSaveCard = async () => {
+    if (!newCard.number || !newCard.name || !newCard.expiry || !newCard.cvv || !newCard.cardName) {
+      Alert.alert("Erro", "Preencha todos os campos");
+      return;
+    }
+
+    const cleanNumber = newCard.number.replace(/\s/g, '');
+    
+    if (cleanNumber.length < 16) {
+      Alert.alert("Erro", "Número do cartão inválido (deve ter 16 dígitos)");
+      return;
+    }
+
+    if (!/^\d+$/.test(cleanNumber)) {
+      Alert.alert("Erro", "Número do cartão deve conter apenas dígitos");
+      return;
+    }
+
+    const expiryRegex = /^(0[1-9]|1[0-2])\/([0-9]{2})$/;
+    if (!expiryRegex.test(newCard.expiry)) {
+      Alert.alert("Erro", "Data de validade inválida (use MM/AA)");
+      return;
+    }
+
+    const [month, year] = newCard.expiry.split('/');
+    const currentYear = new Date().getFullYear() % 100;
+    const currentMonth = new Date().getMonth() + 1;
+    
+    if (parseInt(year) < currentYear || 
+        (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
+      Alert.alert("Erro", "Cartão expirado");
+      return;
+    }
+
+    if (!/^\d{3,4}$/.test(newCard.cvv)) {
+      Alert.alert("Erro", "CVV inválido (deve ter 3 ou 4 dígitos)");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const last4 = cleanNumber.slice(-4);
+      const brand = detectCardBrand(cleanNumber);
+      
+      await addPaymentMethod({
+        type: 'credit',
+        brand: brand,
+        last4: last4,
+        name: newCard.cardName,
+        expiry: newCard.expiry,
+        holderName: newCard.name,
+      });
+      
+      setModalVisible(false);
+      setNewCard({
+        number: '',
+        name: '',
+        expiry: '',
+        cvv: '',
+        cardName: 'Novo Cartão',
+      });
+      Alert.alert("Sucesso", "Cartão adicionado com sucesso!");
+    } catch (error) {
+      console.error('Erro detalhado:', error);
+      Alert.alert("Erro", "Não foi possível adicionar o cartão");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const detectCardBrand = (number) => {
+    if (/^4/.test(number)) return 'visa';
+    if (/^5[1-5]/.test(number)) return 'mastercard';
+    if (/^3[47]/.test(number)) return 'amex';
+    if (/^6(?:011|5)/.test(number)) return 'discover';
+    return 'credit';
+  };
+
+  const handleCardNumberChange = (text) => {
+    let cleaned = text.replace(/\D/g, '');
+    cleaned = cleaned.substring(0, 16);
+    
+    let formatted = '';
+    for (let i = 0; i < cleaned.length; i++) {
+      if (i > 0 && i % 4 === 0) {
+        formatted += ' ';
+      }
+      formatted += cleaned[i];
+    }
+    
+    setNewCard({...newCard, number: formatted});
+  };
+
+  const handleExpiryChange = (text) => {
+    let cleaned = text.replace(/\D/g, '');
+    cleaned = cleaned.substring(0, 4);
+    
+    if (cleaned.length >= 3) {
+      cleaned = cleaned.substring(0, 2) + '/' + cleaned.substring(2);
+    }
+    
+    setNewCard({...newCard, expiry: cleaned});
+  };
+
+  const getBrandIcon = (brand) => {
+    switch (brand) {
+      case 'visa':
+      case 'mastercard':
+      case 'amex':
+      case 'discover':
+        return 'card';
+      case 'pix':
+        return 'qr-code';
+      default:
+        return 'card';
+    }
+  };
+
+  const getBrandColor = (brand) => {
+    switch (brand) {
+      case 'visa': return '#1A1F71';
+      case 'mastercard': return '#EB001B';
+      case 'amex': return '#108168';
+      case 'discover': return '#FF6000';
+      case 'pix': return '#32BCAD';
+      default: return '#007AFF';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -200,17 +409,10 @@ const Pagamentos = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={[
-      styles.container,
-      darkMode && styles.darkContainer
-    ]}>
+    <SafeAreaView style={[styles.container, darkMode && styles.darkContainer]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-      {/* Header */}
-      <View style={[
-        styles.header,
-        darkMode && styles.darkHeader
-      ]}>
+      <View style={[styles.header, darkMode && styles.darkHeader]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -221,18 +423,12 @@ const Pagamentos = ({ navigation, route }) => {
             color={darkMode ? "#FFFFFF" : "#000000"} 
           />
         </TouchableOpacity>
-        <Text style={[
-          styles.headerTitle,
-          darkMode && styles.darkText
-        ]}>
+        <Text style={[styles.headerTitle, darkMode && styles.darkText]}>
           Métodos de Pagamento
         </Text>
         <TouchableOpacity 
           style={styles.headerButton}
-          onPress={() => {
-            loadPaymentMethods();
-            Alert.alert("Atualizado", "Lista de métodos atualizada");
-          }}
+          onPress={loadPaymentMethods}
         >
           <Ionicons 
             name="refresh-outline" 
@@ -244,10 +440,7 @@ const Pagamentos = ({ navigation, route }) => {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={[
-            styles.sectionTitle,
-            darkMode && styles.darkSubtext
-          ]}>
+          <Text style={[styles.sectionTitle, darkMode && styles.darkSubtext]}>
             MÉTODOS SALVOS ({paymentMethods.length})
           </Text>
           
@@ -268,7 +461,6 @@ const Pagamentos = ({ navigation, route }) => {
                 darkMode && styles.darkPaymentCard,
                 method.isDefault && styles.defaultCard
               ]}>
-                {/* Card content */}
                 <View style={styles.cardHeader}>
                   <View style={styles.cardLeft}>
                     <View style={[styles.brandIcon, { backgroundColor: getBrandColor(method.brand) }]}>
@@ -339,72 +531,266 @@ const Pagamentos = ({ navigation, route }) => {
           )}
 
           <TouchableOpacity
-            style={[
-              styles.addButton,
-              darkMode && styles.darkAddButton
-            ]}
+            style={[styles.addButton, darkMode && styles.darkAddButton]}
             onPress={handleAddMethod}
             activeOpacity={0.7}
           >
-            <Ionicons 
-              name="add-circle-outline" 
-              size={24} 
-              color="#007AFF" 
-            />
+            <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
             <Text style={styles.addButtonText}>
               Adicionar novo método de pagamento
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.infoBox}>
-            <Ionicons 
-              name="shield-checkmark" 
-              size={20} 
-              color="#4CD964" 
-            />
-            <Text style={[
-              styles.infoText,
-              darkMode && styles.darkSubtext
-            ]}>
+          <View style={[styles.infoBox, darkMode && styles.darkInfoBox]}>
+            <Ionicons name="shield-checkmark" size={20} color="#4CD964" />
+            <Text style={[styles.infoText, darkMode && styles.darkSubtext]}>
               Seus dados são protegidos com criptografia de ponta a ponta
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Modais para adicionar cartão/PIX */}
-      {/* Mantenha os modais da sua versão original, mas usando as funções locais */}
-      
+      {/* Modal para adicionar cartão */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => !isSubmitting && setModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, darkMode && styles.darkModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, darkMode && styles.darkText]}>
+                Adicionar Cartão
+              </Text>
+              <TouchableOpacity 
+                onPress={() => !isSubmitting && setModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+              <TextInput
+                style={[styles.input, darkMode && styles.darkInput]}
+                placeholder="Nome do cartão (ex: Cartão Principal)"
+                placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                value={newCard.cardName}
+                onChangeText={(text) => setNewCard({...newCard, cardName: text})}
+                editable={!isSubmitting}
+              />
+              
+              <TextInput
+                style={[styles.input, darkMode && styles.darkInput]}
+                placeholder="Número do cartão (16 dígitos)"
+                placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                keyboardType="numeric"
+                value={newCard.number}
+                onChangeText={handleCardNumberChange}
+                maxLength={19}
+                editable={!isSubmitting}
+              />
+              
+              <TextInput
+                style={[styles.input, darkMode && styles.darkInput]}
+                placeholder="Nome completo (como no cartão)"
+                placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                value={newCard.name}
+                onChangeText={(text) => setNewCard({...newCard, name: text})}
+                editable={!isSubmitting}
+                autoCapitalize="words"
+              />
+              
+              <View style={styles.rowInputs}>
+                <TextInput
+                  style={[styles.input, styles.halfInput, darkMode && styles.darkInput]}
+                  placeholder="MM/AA"
+                  placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                  value={newCard.expiry}
+                  onChangeText={handleExpiryChange}
+                  maxLength={5}
+                  editable={!isSubmitting}
+                />
+                
+                <TextInput
+                  style={[styles.input, styles.halfInput, darkMode && styles.darkInput]}
+                  placeholder="CVV"
+                  placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                  keyboardType="numeric"
+                  secureTextEntry
+                  value={newCard.cvv}
+                  onChangeText={(text) => setNewCard({...newCard, cvv: text.replace(/\D/g, '')})}
+                  maxLength={4}
+                  editable={!isSubmitting}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveButton, isSubmitting && styles.disabledButton]}
+                onPress={handleSaveCard}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.saveButtonText}>Salvar Cartão</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.cancelButton, darkMode && styles.darkCancelButton]}
+                onPress={() => setModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Text style={[styles.cancelButtonText, darkMode && styles.darkCancelButtonText]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal para adicionar PIX */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={pixModalVisible}
+        onRequestClose={() => !isSubmitting && setPixModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, darkMode && styles.darkModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, darkMode && styles.darkText]}>
+                Adicionar Chave PIX
+              </Text>
+              <TouchableOpacity 
+                onPress={() => !isSubmitting && setPixModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+              <View style={styles.pixInfo}>
+                <Ionicons name="qr-code-outline" size={40} color="#32BCAD" />
+                <Text style={[styles.pixInfoText, darkMode && styles.darkSubtext]}>
+                  Escolha o tipo de chave PIX
+                </Text>
+              </View>
+              
+              <View style={styles.pixTypeSelector}>
+                {['email', 'cpf', 'phone', 'random'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.pixTypeButton,
+                      pixKeyType === type && styles.pixTypeButtonActive,
+                      darkMode && styles.darkPixTypeButton,
+                      pixKeyType === type && darkMode && styles.darkPixTypeButtonActive
+                    ]}
+                    onPress={() => {
+                      setPixKeyType(type);
+                      setNewPixKey('');
+                    }}
+                  >
+                    <Ionicons 
+                      name={
+                        type === 'email' ? 'mail-outline' :
+                        type === 'cpf' ? 'person-outline' :
+                        type === 'phone' ? 'phone-portrait-outline' :
+                        'key-outline'
+                      } 
+                      size={20} 
+                      color={pixKeyType === type ? "#FFFFFF" : "#007AFF"} 
+                    />
+                    <Text style={[
+                      styles.pixTypeText,
+                      pixKeyType === type && styles.pixTypeTextActive,
+                      darkMode && styles.darkPixTypeText
+                    ]}>
+                      {type === 'email' ? 'Email' :
+                       type === 'cpf' ? 'CPF' :
+                       type === 'phone' ? 'Telefone' :
+                       'Aleatória'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
+              <Text style={[styles.inputLabel, darkMode && styles.darkText]}>
+                {pixKeyType === 'email' ? 'Digite seu email:' :
+                 pixKeyType === 'cpf' ? 'Digite seu CPF:' :
+                 pixKeyType === 'phone' ? 'Digite seu telefone:' :
+                 'Digite a chave aleatória:'}
+              </Text>
+              
+              <TextInput
+                style={[styles.input, darkMode && styles.darkInput]}
+                placeholder={
+                  pixKeyType === 'email' ? 'exemplo@email.com' :
+                  pixKeyType === 'cpf' ? '123.456.789-00' :
+                  pixKeyType === 'phone' ? '(11) 99999-9999' :
+                  'Chave aleatória gerada pelo banco'
+                }
+                placeholderTextColor={darkMode ? "#8E8E93" : "#C7C7CC"}
+                value={newPixKey}
+                onChangeText={setNewPixKey}
+                editable={!isSubmitting}
+                multiline={pixKeyType === 'random'}
+                keyboardType={
+                  pixKeyType === 'email' ? 'email-address' :
+                  pixKeyType === 'cpf' ? 'numeric' :
+                  pixKeyType === 'phone' ? 'phone-pad' :
+                  'default'
+                }
+                autoCapitalize={pixKeyType === 'email' ? 'none' : 'none'}
+              />
+              
+              <TouchableOpacity
+                style={[styles.saveButton, isSubmitting && styles.disabledButton]}
+                onPress={handleAddPix}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="qr-code" size={20} color="#FFFFFF" />
+                    <Text style={styles.saveButtonText}>Salvar Chave PIX</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.cancelButton, darkMode && styles.darkCancelButton]}
+                onPress={() => setPixModalVisible(false)}
+                disabled={isSubmitting}
+              >
+                <Text style={[styles.cancelButtonText, darkMode && styles.darkCancelButtonText]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-// Adicione as funções auxiliares que faltam
-const getBrandIcon = (brand) => {
-  switch (brand) {
-    case 'visa':
-    case 'mastercard':
-    case 'amex':
-    case 'discover':
-      return 'card';
-    case 'pix':
-      return 'qr-code';
-    default:
-      return 'card';
-  }
-};
-
-const getBrandColor = (brand) => {
-  switch (brand) {
-    case 'visa': return '#1A1F71';
-    case 'mastercard': return '#EB001B';
-    case 'amex': return '#108168';
-    case 'discover': return '#FF6000';
-    case 'pix': return '#32BCAD';
-    default: return '#007AFF';
-  }
-};
-
+// ESTILOS COMPLETOS
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -417,11 +803,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#000000',
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -455,6 +843,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 30,
   },
   sectionTitle: {
     fontSize: 13,
@@ -468,19 +857,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: '#E5E5EA',
     borderStyle: 'dashed',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   darkEmptyState: {
     backgroundColor: '#1C1C1E',
     borderColor: '#38383A',
   },
   emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#000000',
     marginTop: 16,
     textAlign: 'center',
@@ -490,14 +879,20 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 8,
     textAlign: 'center',
+    marginBottom: 20,
   },
   paymentCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   darkPaymentCard: {
     backgroundColor: '#1C1C1E',
@@ -510,12 +905,12 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   cardLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flex: 1,
   },
   brandIcon: {
@@ -538,7 +933,7 @@ const styles = StyleSheet.create({
   cardNumber: {
     fontSize: 14,
     color: '#8E8E93',
-    lineHeight: 20,
+    marginBottom: 2,
   },
   defaultBadge: {
     flexDirection: 'row',
@@ -546,7 +941,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF20',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 12,
+    marginLeft: 8,
   },
   defaultText: {
     color: '#007AFF',
@@ -570,13 +966,14 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 14,
     color: '#007AFF',
+    fontWeight: '500',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     marginTop: 8,
     borderWidth: 2,
@@ -601,6 +998,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 24,
   },
+  darkInfoBox: {
+    backgroundColor: '#2C2C2E',
+  },
   infoText: {
     flex: 1,
     marginLeft: 12,
@@ -612,6 +1012,155 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   darkSubtext: {
+    color: '#98989F',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '90%',
+  },
+  darkModalContent: {
+    backgroundColor: '#1C1C1E',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  modalScroll: {
+    maxHeight: 500,
+  },
+  input: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    fontSize: 16,
+    color: '#000000',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  darkInput: {
+    backgroundColor: '#2C2C2E',
+    color: '#FFFFFF',
+    borderColor: '#38383A',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  rowInputs: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  halfInput: {
+    width: '48%',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 20,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  darkCancelButton: {
+    backgroundColor: '#2C2C2E',
+  },
+  cancelButtonText: {
+    color: '#666666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  darkCancelButtonText: {
+    color: '#98989F',
+  },
+  pixInfo: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 10,
+  },
+  pixInfoText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  pixTypeSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  pixTypeButton: {
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F2F8FF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#007AFF20',
+  },
+  pixTypeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  darkPixTypeButton: {
+    backgroundColor: '#2C2C2E',
+    borderColor: '#38383A',
+  },
+  darkPixTypeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  pixTypeText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  pixTypeTextActive: {
+    color: '#FFFFFF',
+  },
+  darkPixTypeText: {
     color: '#98989F',
   },
 });
