@@ -73,13 +73,7 @@ export default function App() {
               animation: 'fade_from_bottom',
             }}
           />
-          <Stack.Screen 
-            name="Perfil" 
-            component={Perfil}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
+          
           <Stack.Screen 
             name="Extrato" 
             component={Extrato}
