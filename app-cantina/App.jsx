@@ -15,9 +15,10 @@ import Extrato from './screens/extrato';
 import AdminDashboard from './screens/admin-dashboard';
 import ManageProducts from './screens/manage-products';
 import ManageUsers from './screens/manage-users';
-import SalesReports from './screens/sales-reports'
-import ExtratoScreen from './screens/extrato';
-import Pagamentos from './screens/Pagamentos';
+import SalesReports from './screens/sales-reports';
+import MeusTickets from './screens/meusTickets';
+import TicketDigital from './screens/TicketDigital';
+import Perfil from './screens/perfil';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,91 +36,102 @@ export default function App() {
               fullScreenGestureEnabled: true,
             }}
           >
-            <Stack.Screen
-              name="Login"
+            <Stack.Screen 
+              name="Login" 
               component={Login}
               options={{
                 animation: 'fade',
               }}
             />
-            <Stack.Screen
-              name="Home"
+            <Stack.Screen 
+              name="Home" 
               component={Home}
               options={{
                 animation: 'slide_from_bottom',
               }}
             />
-            <Stack.Screen
-              name="RecarregarSaldo"
+            <Stack.Screen 
+              name="RecarregarSaldo" 
               component={RecarregarSaldo}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="Carrinho"
+            <Stack.Screen 
+              name="Carrinho" 
               component={Carrinho}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="Configuracoes"
+            <Stack.Screen 
+              name="Configuracoes" 
               component={Configuracoes}
               options={{
                 animation: 'slide_from_left',
               }}
             />
-            <Stack.Screen
-              name="Sobre"
+            <Stack.Screen 
+              name="Sobre" 
               component={Sobre}
               options={{
                 animation: 'fade_from_bottom',
               }}
             />
-            <Stack.Screen
-              name="Extrato"
-              component={ExtratoScreen}
+            <Stack.Screen 
+              name="Perfil" 
+              component={Perfil}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="AdminDashboard"
+            <Stack.Screen 
+              name="Extrato" 
+              component={Extrato}
+              options={{
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen 
+              name="AdminDashboard" 
               component={AdminDashboard}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="ManageProducts"
+            <Stack.Screen 
+              name="ManageProducts" 
               component={ManageProducts}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="ManageUsers"
+            <Stack.Screen 
+              name="ManageUsers" 
               component={ManageUsers}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="SalesReports"
+            <Stack.Screen 
+              name="SalesReports" 
               component={SalesReports}
               options={{
                 animation: 'slide_from_right',
               }}
             />
-            <Stack.Screen
-              name="PaymentMethods"  // ← ESTE É O NOME
-              component={Pagamentos}
+            <Stack.Screen 
+              name="MeusTickets" 
+              component={MeusTickets}
               options={{
-                title: 'Métodos de Pagamento',
-                headerStyle: {
-                  backgroundColor: '#007AFF',
-                },
+                animation: 'slide_from_right',
+              }}
+            />
+            <Stack.Screen 
+              name="TicketDigital" 
+              component={TicketDigital}
+              options={{
+                animation: 'slide_from_right',
               }}
             />
           </Stack.Navigator>

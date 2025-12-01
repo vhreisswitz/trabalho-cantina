@@ -10,8 +10,9 @@ import {
   TextInput,
   StatusBar,
   RefreshControl,
-  Modal,
-  ScrollView
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/database';
@@ -24,10 +25,16 @@ export default function ManageUsers({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    nome: '',
+    email: '',
+    matricula: '',
+    tipo: 'student',
+    saldo: '0.00',
+  });
 
   const CORES = {
     fundo: darkMode ? '#0F172A' : '#F8F9FA',
@@ -75,12 +82,166 @@ export default function ManageUsers({ navigation, route }) {
     user.matricula?.includes(searchText)
   );
 
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      email: '',
+      matricula: '',
+      tipo: 'student',
+      saldo: '0.00',
+    });
+    setSelectedUser(null);
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
+  };
+
+  const addNewUser = async () => {
+    try {
+      if (!formData.nome.trim()) {
+        Alert.alert('Erro', 'Por favor, informe o nome do usuário');
+        return;
+      }
+      if (!formData.matricula.trim()) {
+        Alert.alert('Erro', 'Por favor, informe a matrícula do usuário');
+        return;
+      }
+
+      if (formData.email.trim()) {
+        const emailExists = users.some(user => 
+          user.email && user.email.toLowerCase() === formData.email.toLowerCase()
+        );
+        if (emailExists) {
+          Alert.alert('Erro', 'Este email já está cadastrado');
+          return;
+        }
+      }
+
+      const matriculaExists = users.some(user => 
+        user.matricula === formData.matricula
+      );
+      if (matriculaExists) {
+        Alert.alert('Erro', 'Esta matrícula já está cadastrada');
+        return;
+      }
+
+      const userToInsert = {
+        nome: formData.nome,
+        email: formData.email.trim() || null,
+        matricula: formData.matricula,
+        tipo: formData.tipo,
+        saldo: parseFloat(formData.saldo) || 0,
+        ativo: true,
+        // Removendo created_at e updated_at se não existirem na tabela
+      };
+
+      const { data, error } = await supabase
+        .from('usuarios')
+        .insert([userToInsert])
+        .select();
+
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        
+        // Tentar novamente sem campos que podem não existir
+        const simplifiedUser = {
+          nome: formData.nome,
+          email: formData.email.trim() || null,
+          matricula: formData.matricula,
+          tipo: formData.tipo,
+          saldo: parseFloat(formData.saldo) || 0,
+          ativo: true,
+        };
+        
+        const { data: data2, error: error2 } = await supabase
+          .from('usuarios')
+          .insert([simplifiedUser])
+          .select();
+          
+        if (error2) throw error2;
+        
+        setUsers([...users, data2[0]]);
+      } else {
+        setUsers([...users, data[0]]);
+      }
+      
+      resetForm();
+      Alert.alert('Sucesso', 'Usuário adicionado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao adicionar usuário:', error);
+      Alert.alert('Erro', 'Não foi possível adicionar o usuário.');
+    }
+  };
+
+  const updateUser = async () => {
+    try {
+      if (!formData.nome.trim()) {
+        Alert.alert('Erro', 'Por favor, informe o nome do usuário');
+        return;
+      }
+      if (!formData.matricula.trim()) {
+        Alert.alert('Erro', 'Por favor, informe a matrícula do usuário');
+        return;
+      }
+
+      if (formData.email.trim()) {
+        const emailExists = users.some(user => 
+          user.id !== selectedUser.id && 
+          user.email && 
+          user.email.toLowerCase() === formData.email.toLowerCase()
+        );
+        if (emailExists) {
+          Alert.alert('Erro', 'Este email já está cadastrado para outro usuário');
+          return;
+        }
+      }
+
+      const matriculaExists = users.some(user => 
+        user.id !== selectedUser.id && 
+        user.matricula === formData.matricula
+      );
+      if (matriculaExists) {
+        Alert.alert('Erro', 'Esta matrícula já está cadastrada para outro usuário');
+        return;
+      }
+
+      const updateData = {
+        nome: formData.nome,
+        email: formData.email.trim() || null,
+        matricula: formData.matricula,
+        tipo: formData.tipo,
+        saldo: parseFloat(formData.saldo) || 0,
+      };
+
+      const { error } = await supabase
+        .from('usuarios')
+        .update(updateData)
+        .eq('id', selectedUser.id);
+
+      if (error) throw error;
+
+      setUsers(users.map(user =>
+        user.id === selectedUser.id ? { ...user, ...formData, saldo: parseFloat(formData.saldo) || 0 } : user
+      ));
+
+      resetForm();
+      Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+      Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
+    }
+  };
+
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
       const { error } = await supabase
         .from('usuarios')
         .update({ ativo: !currentStatus })
-        .update({ updated_at: new Date().toISOString() })
         .eq('id', userId);
 
       if (error) throw error;
@@ -127,43 +288,16 @@ export default function ManageUsers({ navigation, route }) {
     );
   };
 
-  const viewUserDetails = (user) => {
+  const selectUserForEdit = (user) => {
     setSelectedUser(user);
-    setEditData({
-      nome: user.nome,
-      email: user.email,
-      matricula: user.matricula,
-      tipo: user.tipo
+    setIsEditing(true);
+    setFormData({
+      nome: user.nome || '',
+      email: user.email || '',
+      matricula: user.matricula || '',
+      tipo: user.tipo || 'student',
+      saldo: user.saldo?.toString() || '0.00',
     });
-    setModalVisible(true);
-    setEditMode(false);
-  };
-
-  const updateUser = async () => {
-    try {
-      const { error } = await supabase
-        .from('usuarios')
-        .update({
-          nome: editData.nome,
-          email: editData.email,
-          matricula: editData.matricula,
-          tipo: editData.tipo,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedUser.id);
-
-      if (error) throw error;
-
-      setUsers(users.map(user =>
-        user.id === selectedUser.id ? { ...user, ...editData } : user
-      ));
-
-      setSelectedUser({ ...selectedUser, ...editData });
-      setEditMode(false);
-      Alert.alert('Sucesso', 'Usuário atualizado com sucesso!');
-    } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar o usuário.');
-    }
   };
 
   const changeUserType = async (userId, currentType) => {
@@ -189,10 +323,6 @@ export default function ManageUsers({ navigation, route }) {
                 user.id === userId ? { ...user, tipo: newType } : user
               ));
 
-              if (selectedUser?.id === userId) {
-                setSelectedUser({ ...selectedUser, tipo: newType });
-              }
-
               Alert.alert('Sucesso', `Tipo alterado para ${newType}!`);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível alterar o tipo.');
@@ -206,7 +336,6 @@ export default function ManageUsers({ navigation, route }) {
   const renderUserItem = ({ item }) => (
     <TouchableOpacity
       style={[styles.userCard, { backgroundColor: CORES.card }]}
-      onPress={() => viewUserDetails(item)}
       onLongPress={() => deleteUser(item.id)}
     >
       <View style={styles.userInfo}>
@@ -249,6 +378,23 @@ export default function ManageUsers({ navigation, route }) {
         <TouchableOpacity
           style={[
             styles.actionButton,
+            styles.editButton,
+          ]}
+          onPress={() => selectUserForEdit(item)}
+        >
+          <Ionicons
+            name="create-outline"
+            size={20}
+            color="#FFFFFF"
+          />
+          <Text style={styles.actionButtonText}>
+            Editar
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
             styles.toggleButton,
             { backgroundColor: item.ativo ? '#FF3B30' : '#34C759' }
           ]}
@@ -278,208 +424,11 @@ export default function ManageUsers({ navigation, route }) {
             color="#FFFFFF"
           />
           <Text style={styles.actionButtonText}>
-            {item.tipo === 'admin' ? 'Tornar Estudante' : 'Tornar Admin'}
+            {item.tipo === 'admin' ? 'Estudante' : 'Admin'}
           </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
-  );
-
-  const UserDetailsModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.modalContainer}>
-        <View style={[styles.modalContent, { backgroundColor: CORES.card }]}>
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: CORES.texto }]}>
-              {editMode ? 'Editar Usuário' : 'Detalhes do Usuário'}
-            </Text>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Ionicons name="close" size={24} color={CORES.texto_secundario} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalBody}>
-            {editMode ? (
-              <>
-                <View style={styles.editField}>
-                  <Text style={[styles.editLabel, { color: CORES.texto }]}>Nome:</Text>
-                  <TextInput
-                    style={[styles.editInput, { 
-                      backgroundColor: darkMode ? '#2C2C2E' : '#F3F4F6',
-                      color: CORES.texto,
-                      borderColor: CORES.borda
-                    }]}
-                    value={editData.nome}
-                    onChangeText={(text) => setEditData({ ...editData, nome: text })}
-                  />
-                </View>
-
-                <View style={styles.editField}>
-                  <Text style={[styles.editLabel, { color: CORES.texto }]}>Email:</Text>
-                  <TextInput
-                    style={[styles.editInput, { 
-                      backgroundColor: darkMode ? '#2C2C2E' : '#F3F4F6',
-                      color: CORES.texto,
-                      borderColor: CORES.borda
-                    }]}
-                    value={editData.email}
-                    onChangeText={(text) => setEditData({ ...editData, email: text })}
-                    keyboardType="email-address"
-                  />
-                </View>
-
-                <View style={styles.editField}>
-                  <Text style={[styles.editLabel, { color: CORES.texto }]}>Matrícula:</Text>
-                  <TextInput
-                    style={[styles.editInput, { 
-                      backgroundColor: darkMode ? '#2C2C2E' : '#F3F4F6',
-                      color: CORES.texto,
-                      borderColor: CORES.borda
-                    }]}
-                    value={editData.matricula}
-                    onChangeText={(text) => setEditData({ ...editData, matricula: text })}
-                    keyboardType="numeric"
-                  />
-                </View>
-
-                <View style={styles.editField}>
-                  <Text style={[styles.editLabel, { color: CORES.texto }]}>Tipo:</Text>
-                  <View style={styles.typeSelector}>
-                    <TouchableOpacity
-                      style={[
-                        styles.typeOption,
-                        { 
-                          backgroundColor: editData.tipo === 'student' ? CORES.primaria : CORES.filtro_inativo,
-                          borderColor: CORES.borda
-                        }
-                      ]}
-                      onPress={() => setEditData({ ...editData, tipo: 'student' })}
-                    >
-                      <Text style={[
-                        styles.typeOptionText,
-                        { color: editData.tipo === 'student' ? '#FFFFFF' : CORES.texto }
-                      ]}>
-                        Estudante
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.typeOption,
-                        { 
-                          backgroundColor: editData.tipo === 'admin' ? '#FF6B35' : CORES.filtro_inativo,
-                          borderColor: CORES.borda
-                        }
-                      ]}
-                      onPress={() => setEditData({ ...editData, tipo: 'admin' })}
-                    >
-                      <Text style={[
-                        styles.typeOptionText,
-                        { color: editData.tipo === 'admin' ? '#FFFFFF' : CORES.texto }
-                      ]}>
-                        Administrador
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Nome:</Text>
-                  <Text style={[styles.detailValue, { color: CORES.texto }]}>{selectedUser?.nome}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Email:</Text>
-                  <Text style={[styles.detailValue, { color: CORES.texto }]}>{selectedUser?.email || 'Não informado'}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Matrícula:</Text>
-                  <Text style={[styles.detailValue, { color: CORES.texto }]}>{selectedUser?.matricula || 'Não informada'}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Tipo:</Text>
-                  <View style={[
-                    styles.typeBadge,
-                    { backgroundColor: selectedUser?.tipo === 'admin' ? '#FF6B35' : '#005CA9' }
-                  ]}>
-                    <Text style={styles.typeText}>
-                      {selectedUser?.tipo === 'admin' ? 'ADMINISTRADOR' : 'ESTUDANTE'}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Status:</Text>
-                  <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: selectedUser?.ativo ? '#34C759' : '#FF3B30' }
-                  ]}>
-                    <Text style={styles.statusText}>
-                      {selectedUser?.ativo ? 'ATIVO' : 'INATIVO'}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>Saldo:</Text>
-                  <Text style={[styles.detailValue, { color: CORES.texto }]}>
-                    R$ {selectedUser?.saldo?.toFixed(2) || '0.00'}
-                  </Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, { color: CORES.texto_secundario }]}>ID:</Text>
-                  <Text style={[styles.detailValue, { color: CORES.texto }]}>{selectedUser?.id}</Text>
-                </View>
-              </>
-            )}
-          </ScrollView>
-
-          <View style={styles.modalFooter}>
-            {editMode ? (
-              <>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setEditMode(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.saveButton]}
-                  onPress={updateUser}
-                >
-                  <Text style={styles.saveButtonText}>Salvar</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.editButton]}
-                  onPress={() => setEditMode(true)}
-                >
-                  <Ionicons name="create-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.editButtonText}>Editar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.closeButton]}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.closeButtonText}>Fechar</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </View>
-    </Modal>
   );
 
   const dynamicStyles = {
@@ -506,6 +455,17 @@ export default function ManageUsers({ navigation, route }) {
     },
     statsValue: {
       color: CORES.texto,
+    },
+    formCard: {
+      backgroundColor: CORES.card,
+    },
+    formLabel: {
+      color: CORES.texto,
+    },
+    formInput: {
+      backgroundColor: darkMode ? '#2C2C2E' : '#F3F4F6',
+      color: CORES.texto,
+      borderColor: CORES.borda,
     }
   };
 
@@ -539,92 +499,221 @@ export default function ManageUsers({ navigation, route }) {
   }
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
+    <KeyboardAvoidingView 
+      style={[styles.container, dynamicStyles.container]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={100}
+    >
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-      <View style={[styles.header, dynamicStyles.header]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>← Voltar</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Gerenciar Usuários</Text>
-        <TouchableOpacity onPress={loadUsers}>
-          <Ionicons name="refresh" size={24} color={CORES.primaria} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.statsContainer, dynamicStyles.statsCard]}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, dynamicStyles.statsValue]}>{stats.total}</Text>
-          <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Total</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: '#34C759' }]}>{stats.ativos}</Text>
-          <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Ativos</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: '#FF3B30' }]}>{stats.inativos}</Text>
-          <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Inativos</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: '#FF6B35' }]}>{stats.admins}</Text>
-          <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Admins</Text>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={CORES.texto_secundario} style={styles.searchIcon} />
-        <TextInput
-          style={[styles.searchInput, dynamicStyles.searchInput]}
-          placeholder="Buscar por nome, email ou matrícula..."
-          placeholderTextColor={CORES.texto_secundario}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        {searchText.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchText('')}>
-            <Ionicons name="close-circle" size={20} color={CORES.texto_secundario} />
+      <ScrollView style={styles.scrollView}>
+        <View style={[styles.header, dynamicStyles.header]}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>← Voltar</Text>
           </TouchableOpacity>
-        )}
-      </View>
+          <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Gerenciar Usuários</Text>
+          <TouchableOpacity onPress={loadUsers} style={styles.headerButton}>
+            <Ionicons name="refresh" size={24} color={CORES.primaria} />
+          </TouchableOpacity>
+        </View>
 
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderUserItem}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[CORES.primaria]}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={64} color={CORES.texto_secundario} />
-            <Text style={[styles.emptyText, { color: CORES.texto }]}>
-              {searchText.length > 0 
-                ? 'Nenhum usuário encontrado' 
-                : 'Nenhum usuário cadastrado'
-              }
-            </Text>
-            <Text style={[styles.emptySubtext, { color: CORES.texto_secundario }]}>
-              {searchText.length > 0 
-                ? 'Tente buscar com outros termos'
-                : 'Os usuários aparecerão aqui quando forem cadastrados'
-              }
-            </Text>
+        <View style={[styles.statsContainer, dynamicStyles.statsCard]}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, dynamicStyles.statsValue]}>{stats.total}</Text>
+            <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Total</Text>
           </View>
-        }
-      />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#34C759' }]}>{stats.ativos}</Text>
+            <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Ativos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#FF3B30' }]}>{stats.inativos}</Text>
+            <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Inativos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#FF6B35' }]}>{stats.admins}</Text>
+            <Text style={[styles.statLabel, dynamicStyles.statsLabel]}>Admins</Text>
+          </View>
+        </View>
 
-      <UserDetailsModal />
-    </View>
+        <View style={[styles.formContainer, dynamicStyles.formCard]}>
+          <Text style={[styles.formTitle, { color: CORES.texto }]}>
+            {isEditing ? `Editando: ${selectedUser?.nome}` : 'Adicionar Novo Usuário'}
+          </Text>
+          
+          <View style={styles.formRow}>
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, dynamicStyles.formLabel]}>Nome *</Text>
+              <TextInput
+                style={[styles.formInput, dynamicStyles.formInput]}
+                value={formData.nome}
+                onChangeText={(text) => handleInputChange('nome', text)}
+                placeholder="Nome completo"
+              />
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, dynamicStyles.formLabel]}>Email (opcional)</Text>
+              <TextInput
+                style={[styles.formInput, dynamicStyles.formInput]}
+                value={formData.email}
+                onChangeText={(text) => handleInputChange('email', text)}
+                placeholder="email@exemplo.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formRow}>
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, dynamicStyles.formLabel]}>Matrícula *</Text>
+              <TextInput
+                style={[styles.formInput, dynamicStyles.formInput]}
+                value={formData.matricula}
+                onChangeText={(text) => handleInputChange('matricula', text)}
+                placeholder="Matrícula"
+                keyboardType="numeric"
+              />
+            </View>
+            
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, dynamicStyles.formLabel]}>Saldo (R$)</Text>
+              <TextInput
+                style={[styles.formInput, dynamicStyles.formInput]}
+                value={formData.saldo}
+                onChangeText={(text) => handleInputChange('saldo', text)}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formRow}>
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, dynamicStyles.formLabel]}>Tipo</Text>
+              <View style={styles.typeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.typeOption,
+                    { 
+                      backgroundColor: formData.tipo === 'student' ? CORES.primaria : CORES.filtro_inativo,
+                      borderColor: CORES.borda
+                    }
+                  ]}
+                  onPress={() => handleInputChange('tipo', 'student')}
+                >
+                  <Text style={[
+                    styles.typeOptionText,
+                    { color: formData.tipo === 'student' ? '#FFFFFF' : CORES.texto }
+                  ]}>
+                    Estudante
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.typeOption,
+                    { 
+                      backgroundColor: formData.tipo === 'admin' ? '#FF6B35' : CORES.filtro_inativo,
+                      borderColor: CORES.borda
+                    }
+                  ]}
+                  onPress={() => handleInputChange('tipo', 'admin')}
+                >
+                  <Text style={[
+                    styles.typeOptionText,
+                    { color: formData.tipo === 'admin' ? '#FFFFFF' : CORES.texto }
+                  ]}>
+                    Administrador
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formActions}>
+            {isEditing && (
+              <TouchableOpacity
+                style={[styles.formButton, styles.cancelButton]}
+                onPress={resetForm}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity
+              style={[styles.formButton, styles.saveButton]}
+              onPress={isEditing ? updateUser : addNewUser}
+            >
+              <Ionicons 
+                name={isEditing ? "checkmark" : "add"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.saveButtonText}>
+                {isEditing ? 'Salvar Alterações' : 'Adicionar Usuário'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color={CORES.texto_secundario} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, dynamicStyles.searchInput]}
+            placeholder="Buscar por nome, email ou matrícula..."
+            placeholderTextColor={CORES.texto_secundario}
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <Ionicons name="close-circle" size={20} color={CORES.texto_secundario} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          data={filteredUsers}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderUserItem}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[CORES.primaria]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={64} color={CORES.texto_secundario} />
+              <Text style={[styles.emptyText, { color: CORES.texto }]}>
+                {searchText.length > 0 
+                  ? 'Nenhum usuário encontrado' 
+                  : 'Nenhum usuário cadastrado'
+                }
+              </Text>
+              <Text style={[styles.emptySubtext, { color: CORES.texto_secundario }]}>
+                {searchText.length > 0 
+                  ? 'Tente buscar com outros termos'
+                  : 'Os usuários aparecerão aqui quando forem cadastrados'
+                }
+              </Text>
+            </View>
+          }
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   header: {
@@ -644,6 +733,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  headerButton: {
+    padding: 4,
   },
   headerRight: {
     width: 24,
@@ -671,6 +763,89 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  formContainer: {
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  formGroup: {
+    flex: 1,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  formInput: {
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  typeOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  typeOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  formActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 16,
+  },
+  formButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  saveButton: {
+    backgroundColor: '#34C759',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    color: '#6B7280',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -762,6 +937,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
+  editButton: {
+    backgroundColor: '#005CA9',
+  },
   toggleButton: {
     backgroundColor: '#FF3B30',
   },
@@ -797,123 +975,5 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     textAlign: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    borderRadius: 12,
-    padding: 20,
-    width: '90%',
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  modalBody: {
-    maxHeight: 400,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editButton: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: '#005CA9',
-  },
-  editButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  saveButton: {
-    backgroundColor: '#34C759',
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-  },
-  cancelButtonText: {
-    color: '#6B7280',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  closeButton: {
-    backgroundColor: '#6B7280',
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  detailLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  editField: {
-    marginBottom: 16,
-  },
-  editLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  editInput: {
-    height: 48,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    borderWidth: 1,
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  typeOption: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  typeOptionText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
