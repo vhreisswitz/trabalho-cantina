@@ -17,6 +17,7 @@ import Extrato from './screens/extrato';
 import { PointerType } from 'react-native-gesture-handler';
 import MeusTickets from './screens/meusTickets';
 import TicketDigital from './screens/TicketDigital';
+import Pagamentos from './screens/pagamentos';
 
 const Stack = createNativeStackNavigator();
 
@@ -93,6 +94,16 @@ export default function App() {
             component={TicketDigital}
             options={{ headerShown: false }}
           />
+          <Stack.Screen 
+        name="PaymentMethods" 
+        component={Pagamentos}
+        options={{ 
+          title: 'Métodos de Pagamento',
+          headerStyle: {
+            backgroundColor: '#007AFF',
+          },
+        }}
+      />
         </Stack.Navigator>
         {/* ✅ FIM DO NAVIGATOR */}
 
