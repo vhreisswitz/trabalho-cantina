@@ -4,6 +4,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SaldoProvider } from './hooks/useSaldo';
+
 import Login from './screens/login';
 import Home from './screens/home';
 import RecarregarSaldo from './screens/RecarregarSaldo';
@@ -16,6 +17,8 @@ import AdminDashboard from './screens/admin-dashboard';
 import ManageProducts from './screens/manage-products';
 import ManageUsers from './screens/manage-users';
 import SalesReports from './screens/sales-reports';
+import TicketDigital from './screens/TicketDigital';
+import MeusTickets from './screens/MeusTickets';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,91 +35,53 @@ export default function App() {
             fullScreenGestureEnabled: true,
           }}
         >
-          <Stack.Screen 
-            name="Login" 
-            component={Login}
-            options={{
-              animation: 'fade',
-            }}
-          />
-          <Stack.Screen 
-            name="Home" 
-            component={Home}
-            options={{
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <Stack.Screen 
-            name="RecarregarSaldo" 
-            component={RecarregarSaldo}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="Carrinho" 
-            component={Carrinho}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="Configuracoes" 
-            component={Configuracoes}
-            options={{
-              animation: 'slide_from_left',
-            }}
-          />
-          <Stack.Screen 
-            name="Sobre" 
-            component={Sobre}
-            options={{
-              animation: 'fade_from_bottom',
-            }}
-          />
-          <Stack.Screen 
-            name="Perfil" 
-            component={Perfil}
+
+          <Stack.Screen name="Login" component={Login} options={{ animation: 'fade' }} />
+
+          <Stack.Screen name="Home" component={Home} options={{ animation: 'slide_from_bottom' }} />
+
+          <Stack.Screen name="RecarregarSaldo" component={RecarregarSaldo} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="Carrinho" component={Carrinho} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="Configuracoes" component={Configuracoes} options={{ animation: 'slide_from_left' }} />
+
+          <Stack.Screen name="Sobre" component={Sobre} options={{ animation: 'fade_from_bottom' }} />
+
+          <Stack.Screen name="Perfil" component={Perfil} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="Extrato" component={Extrato} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="ManageProducts" component={ManageProducts} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="ManageUsers" component={ManageUsers} options={{ animation: 'slide_from_right' }} />
+
+          <Stack.Screen name="SalesReports" component={SalesReports} options={{ animation: 'slide_from_right' }} />
+
+          {/* Tela MeusTickets — FALTAVA ESSA PORRA */}
+          <Stack.Screen
+            name="MeusTickets"
+            component={MeusTickets}
             options={{
               animation: 'slide_from_right',
+              headerShown: false,
             }}
           />
-          <Stack.Screen 
-            name="Extrato" 
-            component={Extrato}
+
+          {/* Tela TicketDigital */}
+          <Stack.Screen
+            name="TicketDigital"
+            component={TicketDigital}
             options={{
               animation: 'slide_from_right',
+              headerShown: false,
             }}
           />
-          <Stack.Screen 
-            name="AdminDashboard" 
-            component={AdminDashboard}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="ManageProducts" 
-            component={ManageProducts}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="ManageUsers" 
-            component={ManageUsers}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen 
-            name="SalesReports" 
-            component={SalesReports}
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
+
         </Stack.Navigator>
+
         <StatusBar style="auto" />
       </NavigationContainer>
     </SaldoProvider>
