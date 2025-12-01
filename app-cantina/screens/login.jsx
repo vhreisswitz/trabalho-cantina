@@ -5,23 +5,21 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Switch,
   ScrollView,
   Alert,
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
-import { useTheme } from '../context/themeContext'; // Importe o hook
+import { useTheme } from '../context/themeContext';
 
 export default function Login() {
   const navigation = useNavigation();
-  const { darkMode } = useTheme(); // Use o contexto
+  const { darkMode } = useTheme();
   
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [errors, setErrors] = useState({});
-  const [abaAtiva, setAbaAtiva] = useState('login');
   const [criandoTicket, setCriandoTicket] = useState(false);
 
   const validarNome = (nome) => /^[A-Za-zÀ-ÿ\s]{2,}$/.test(nome.trim());
@@ -109,11 +107,15 @@ export default function Login() {
         if (data && data.length > 0) {
           const usuario = data[0];
           
-          // DEBUG - Mostra os dados do usuário
-          Alert.alert(
-            'DEBUG - Dados do Usuário', 
-            `ID: ${usuario.id}\nNome: ${usuario.nome}\nTipo: ${usuario.tipo}\nMatrícula: ${usuario.matricula}`
-          );
+          // VERIFICAÇÃO DE CONTA ATIVA
+          if (usuario.ativo === false) {
+            Alert.alert(
+              'Conta Desativada',
+              'Sua conta está desativada. Entre em contato com o administrador.',
+              [{ text: 'OK' }]
+            );
+            return;
+          }
 
           if (usuario.tipo === 'admin') {
             navigation.navigate('AdminDashboard', { usuario });
@@ -130,7 +132,6 @@ export default function Login() {
     }
   };
 
-  // Estilos dinâmicos baseados no tema
   const dynamicStyles = {
     container: {
       backgroundColor: darkMode ? '#1E3A8A' : '#3B82F6',
