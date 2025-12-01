@@ -73,7 +73,7 @@ export default function Login() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollCenter}>
-        <Text style={styles.titulo}>Acesso ao Sistema</Text>
+        <Text style={styles.titulo}>Login</Text>
 
         <View style={styles.card}>
 
