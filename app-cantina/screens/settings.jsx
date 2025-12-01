@@ -36,9 +36,11 @@ export default function Settings({ navigation, route }) {
 
   const { darkMode, setTheme } = useTheme();
 
+  // Carregar contagem de métodos de pagamento
   useEffect(() => {
     loadPaymentCount();
     
+    // Atualizar sempre que a tela for focada
     const unsubscribe = navigation.addListener('focus', () => {
       loadPaymentCount();
     });
@@ -131,12 +133,14 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // CORREÇÃO AQUI: Agora navega para 'Pagamentos' (nome do arquivo Pagamentos.jsx)
+  // FUNÇÃO CORRIGIDA - Agora navega para 'PaymentMethods'
   const handlePaymentMethods = () => {
-    navigation.navigate('Pagamentos', { 
+    console.log('Tentando navegar para PaymentMethods');
+    console.log('Usuário:', usuario);
+    navigation.navigate('PaymentMethods', { 
       usuario,
       darkMode,
-      onGoBack: loadPaymentCount
+      onGoBack: loadPaymentCount // Atualizar contagem ao voltar
     });
   };
 
