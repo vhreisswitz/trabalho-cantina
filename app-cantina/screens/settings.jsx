@@ -13,7 +13,7 @@ import {
   Linking
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/themeContext'; // Verifique o caminho correto
+import { useTheme } from '../context/themeContext';
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -28,16 +28,13 @@ export default function Settings({ navigation, route }) {
   
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // USE O CONTEXTO DE FORMA SIMPLES - CORRIGIDO
   const { darkMode, setTheme } = useTheme();
 
-  // Função para alternar o modo escuro - CORRIGIDA (SIMPLES)
   const toggleDarkMode = (value) => {
     console.log('Mudando tema para:', value ? 'dark' : 'light');
     setTheme(value);
   };
 
-  // Função para lidar com logout
   const handleLogout = () => {
     Alert.alert(
       "Sair da Conta",
@@ -60,7 +57,6 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para informações pessoais
   const handlePersonalInfo = () => {
     Alert.alert(
       "Informações Pessoais",
@@ -69,7 +65,6 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para segurança
   const handleSecurity = () => {
     Alert.alert(
       "Segurança",
@@ -82,7 +77,6 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para métodos de pagamento
   const handlePaymentMethods = () => {
     Alert.alert(
       "Métodos de Pagamento",
@@ -95,12 +89,10 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para extrato - agora navega para tela de histórico
   const handleStatement = () => {
     navigation.navigate('Extrato', { usuario });
   };
 
-  // Função para selecionar idioma
   const handleLanguage = () => {
     Alert.alert(
       "Selecionar Idioma",
@@ -114,7 +106,6 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para ajuda e suporte
   const handleHelpSupport = () => {
     Alert.alert(
       "Ajuda & Suporte",
@@ -138,7 +129,6 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // Função para privacidade e segurança
   const handlePrivacySecurity = () => {
     Alert.alert(
       "Privacidade e Segurança",
@@ -215,7 +205,6 @@ export default function Settings({ navigation, route }) {
     </Animated.View>
   );
 
-  // Estilos dinâmicos baseados no tema
   const dynamicStyles = {
     container: {
       backgroundColor: darkMode ? '#000000' : '#F8F9FA',
@@ -230,7 +219,6 @@ export default function Settings({ navigation, route }) {
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-      {/* Header */}
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity 
           style={[styles.backButton, darkMode && styles.darkBackButton]}
@@ -244,7 +232,6 @@ export default function Settings({ navigation, route }) {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Profile Section */}
         <View style={[styles.profileSection, darkMode && styles.darkSection]}>
           <View style={styles.avatarContainer}>
             <Image 
@@ -257,7 +244,6 @@ export default function Settings({ navigation, route }) {
           <Text style={[styles.userEmail, darkMode && styles.darkSubtext]}>{usuario.email}</Text>
         </View>
 
-        {/* Settings Sections */}
         <View style={[styles.section, darkMode && styles.darkSection]}>
           <Text style={[styles.sectionTitle, darkMode && styles.darkSectionTitle]}>CONTA</Text>
           <SettingItem
@@ -338,7 +324,6 @@ export default function Settings({ navigation, route }) {
           />
         </View>
 
-        {/* Logout Button */}
         <TouchableOpacity 
           style={[styles.logoutButton, darkMode && styles.darkLogoutButton]}
           activeOpacity={0.7}
@@ -356,7 +341,6 @@ export default function Settings({ navigation, route }) {
   );
 }
 
-// Os estilos permanecem os mesmos
 const styles = StyleSheet.create({
   container: {
     flex: 1,

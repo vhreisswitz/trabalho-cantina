@@ -2,10 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { addRecarga } from '../services/database';
 import { useSaldo } from '../hooks/useSaldo';
+import { useTheme } from '../context/themeContext';
 
 export default function RecarregarSaldo({ route, navigation }) {
   const { usuario, onSaldoAtualizado } = route.params;
   const { saldo, atualizarSaldo } = useSaldo();
+  const { darkMode } = useTheme();
 
   const recarregar = async (valor) => {
     try {
@@ -28,7 +30,6 @@ export default function RecarregarSaldo({ route, navigation }) {
     }
   };
 
-  // Estilos dinâmicos
   const dynamicStyles = {
     container: {
       backgroundColor: darkMode ? '#0F172A' : '#E6F0FF',
@@ -42,8 +43,8 @@ export default function RecarregarSaldo({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Adicionar Saldo</Text>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <Text style={[styles.title, dynamicStyles.title]}>Adicionar Saldo</Text>
       <Text style={styles.saldoAtual}>Saldo atual: R$ {saldo.toFixed(2)}</Text>
 
       {[5, 10, 20, 50, 100].map((valor) => (

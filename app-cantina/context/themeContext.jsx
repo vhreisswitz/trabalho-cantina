@@ -13,12 +13,11 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const colorScheme = Appearance.getColorScheme();
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
 
   useEffect(() => {
     console.log('Tema atual:', darkMode ? 'dark' : 'light');
   }, [darkMode]);
-
 
   const toggleTheme = () => {
     setDarkMode(prev => !prev);
@@ -33,8 +32,8 @@ export const ThemeProvider = ({ children }) => {
     setDarkMode,
     toggleTheme,
     setTheme,
-    isDark: darkMode, 
-    theme: darkMode ? 'dark' : 'light' 
+    isDark: darkMode,
+    theme: darkMode ? 'dark' : 'light'
   };
 
   return (

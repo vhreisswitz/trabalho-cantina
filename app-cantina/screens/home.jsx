@@ -11,6 +11,7 @@ import {
 import { supabase, addCompra } from '../services/database';
 import useCantinaTickets from '../hooks/useCantinaTickets';
 import { useSaldo } from '../hooks/useSaldo';
+import { useTheme } from '../context/themeContext';
 
 export default function Home({ route, navigation }) {
   const [produtos, setProdutos] = useState([]);
@@ -19,6 +20,7 @@ export default function Home({ route, navigation }) {
   const [carrinho, setCarrinho] = useState([]);
 
   const { saldo, atualizarSaldo, definirUsuario } = useSaldo();
+  const { darkMode } = useTheme();
 
   const {
     gerarTicketGratuito,
@@ -186,22 +188,6 @@ export default function Home({ route, navigation }) {
   function produtoAceitaTicket(produto) {
     return produto.codigo?.startsWith('P00');
   }
-
-  
-  const dynamicStyles = {
-    container: {
-      backgroundColor: CORES_SENAI.azul_claro,
-    },
-    header: {
-      backgroundColor: CORES_SENAI.azul_principal,
-    },
-    text: {
-      color: CORES_SENAI.texto,
-    },
-    textSecundario: {
-      color: CORES_SENAI.texto_secundario,
-    }
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>

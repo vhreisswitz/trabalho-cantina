@@ -6,10 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getTransacoesByUsuario, getEstatisticasUsuario } from '../services/database';
 import { useSaldo } from '../hooks/useSaldo';
+import { useTheme } from '../context/themeContext';
 
 export default function ExtratoScreen({ navigation, route }) {
   const usuario = route.params?.usuario;
   const { saldo } = useSaldo();
+  const { darkMode } = useTheme();
   
   const [filtro, setFiltro] = useState('todos');
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,6 +26,18 @@ export default function ExtratoScreen({ navigation, route }) {
     quantidadeRecargas: 0,
     quantidadeCompras: 0
   });
+
+  const CORES = {
+    fundo: darkMode ? '#0F172A' : '#F8F9FA',
+    card: darkMode ? '#1E293B' : '#FFFFFF',
+    texto: darkMode ? '#FFFFFF' : '#000000',
+    texto_secundario: darkMode ? '#94A3B8' : '#6B7280',
+    primaria: '#005CA9',
+    entrada: '#34C759',
+    saida: '#FF3B30',
+    borda: darkMode ? '#334155' : '#E5E7EB',
+    filtro_inativo: darkMode ? '#334155' : '#F3F4F6'
+  };
 
   const fetchTransacoes = async () => {
     try {
@@ -152,7 +166,6 @@ export default function ExtratoScreen({ navigation, route }) {
     );
   };
 
-  // Estilos dinâmicos
   const dynamicStyles = {
     container: {
       backgroundColor: CORES.fundo,
@@ -226,7 +239,7 @@ export default function ExtratoScreen({ navigation, route }) {
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
       
-      <View style={styles.header}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -239,9 +252,9 @@ export default function ExtratoScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.resumoContainer}>
-        <Text style={styles.resumoTitle}>Saldo Disponível</Text>
-        <Text style={styles.saldoTotal}>R$ {saldo.toFixed(2)}</Text>
+      <View style={[styles.resumoContainer, dynamicStyles.resumoContainer]}>
+        <Text style={[styles.resumoTitle, dynamicStyles.resumoTitle]}>Saldo Disponível</Text>
+        <Text style={[styles.saldoTotal, dynamicStyles.saldoTotal]}>R$ {saldo.toFixed(2)}</Text>
         <View style={styles.resumoLinha}>
           <View style={styles.resumoItem}>
             <Text style={styles.resumoValorEntrada}>+ R$ {estatisticas.totalEntradas.toFixed(2)}</Text>
