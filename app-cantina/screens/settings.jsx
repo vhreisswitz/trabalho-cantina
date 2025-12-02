@@ -16,7 +16,8 @@ import {
   SafeAreaView
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from "expo-image-picker";
+import { useTheme } from '../context/themeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -28,55 +29,50 @@ export default function Settings({ navigation, route }) {
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [language, setLanguage] = useState('Português');
+  const [darkModeModal, setDarkModeModal] = useState(false);
+  const [paymentMethodsCount, setPaymentMethodsCount] = useState(0);
   
-  const [profilePhoto, setProfilePhoto] = useState(
-    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face"
-  );
-
   const [scaleAnim] = useState(new Animated.Value(1));
 
-  // 📸 TROCAR FOTO DE PERFIL DE VERDADE
-  const handleChangePhoto = () => {
-    Alert.alert(
-      "Mudar Foto de Perfil",
-      "Escolha uma opção:",
-      [
-        { text: "Tirar Foto", onPress: openCamera },
-        { text: "Escolher da Galeria", onPress: openGallery },
-        { text: "Cancelar", style: "cancel" }
-      ]
-    );
-  };
+  const { darkMode, setTheme } = useTheme();
 
-  const openCamera = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return Alert.alert("Permissão negada", "Ative a câmera.");
-
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-      allowsEditing: true,
+  // Carregar contagem de métodos de pagamento
+  useEffect(() => {
+    loadPaymentCount();
+    
+    // Atualizar sempre que a tela for focada
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadPaymentCount();
     });
+    
+    return unsubscribe;
+  }, [navigation]);
 
-    if (!result.canceled) {
-      setProfilePhoto(result.assets[0].uri);
+  const loadPaymentCount = async () => {
+    try {
+      const storedMethods = await AsyncStorage.getItem('@payment_methods');
+      if (storedMethods) {
+        const methods = JSON.parse(storedMethods);
+        setPaymentMethodsCount(methods.length);
+      } else {
+        setPaymentMethodsCount(0);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar contagem:', error);
+      setPaymentMethodsCount(0);
     }
   };
 
-  const openGallery = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return Alert.alert("Permissão negada", "Ative a galeria.");
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      quality: 1,
-      allowsEditing: true,
-    });
-
-    if (!result.canceled) {
-      setProfilePhoto(result.assets[0].uri);
+  const toggleDarkMode = (value) => {
+    if (value !== darkMode) {
+      setDarkModeModal(true);
+      setTimeout(() => {
+        console.log('Mudando tema para:', value ? 'dark' : 'light');
+        setTheme(value);
+        setDarkModeModal(false);
+      }, 1500);
     }
   };
-
-  const toggleDarkMode = (value) => setDarkMode(value);
 
   const handleLogout = () => {
     Alert.alert(
