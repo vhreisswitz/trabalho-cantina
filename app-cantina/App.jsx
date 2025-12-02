@@ -19,6 +19,7 @@ import SalesReports from './screens/sales-reports';
 import MeusTickets from './screens/meusTickets';
 import TicketDigital from './screens/TicketDigital';
 import Perfil from './screens/perfil';
+import Pagamentos from './screens/pagamentos'
 
 const Stack = createNativeStackNavigator();
 
@@ -134,6 +135,12 @@ export default function App() {
                 animation: 'slide_from_right',
               }}
             />
+            <Stack.Screen
+             name="PaymentMethods"
+             component={Pagamentos}
+             options={{
+                animation: 'slide_from_right',
+             }} />
           </Stack.Navigator>
           <StatusBar style="auto" />
         </NavigationContainer>

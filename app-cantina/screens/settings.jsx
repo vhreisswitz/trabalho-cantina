@@ -140,7 +140,7 @@ export default function Settings({ navigation, route }) {
     navigation.navigate('PaymentMethods', { 
       usuario,
       darkMode,
-      onGoBack: loadPaymentCount // Atualizar contagem ao voltar
+      onGoBack: loadPaymentCount 
     });
   };
 
