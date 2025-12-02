@@ -30,14 +30,35 @@ export default function Home({ route, navigation }) {
   } = useCantinaTickets();
 
   const CORES_SENAI = {
-    azul_principal: '#005CA9',
-    azul_escuro: '#003A6B',
-    azul_claro: darkMode ? '#1E293B' : '#E6F0FF',
-    branco: darkMode ? '#1E293B' : '#FFFFFF',
-    laranja: '#FF6B35',
-    cinza: darkMode ? '#94A3B8' : '#5C6B8A',
-    texto: darkMode ? '#FFFFFF' : '#000000',
-    texto_secundario: darkMode ? '#CBD5E1' : '#5C6B8A'
+    // Tema escuro estilo DeepSeek (cinza muito escuro, não preto puro)
+    fundo_principal: darkMode ? '#0d1117' : '#FFFFFF', // Fundo principal (cinza muito escuro)
+    fundo_header: darkMode ? '#161b22' : '#005CA9', // Header (cinza escuro)
+    fundo_card: darkMode ? '#21262d' : '#FFFFFF', // Cards (cinza médio-escuro)
+    fundo_elevated: darkMode ? '#30363d' : '#F8F9FA', // Elementos elevados
+    
+    // Cores de destaque
+    azul_principal: darkMode ? '#58a6ff' : '#005CA9', // Azul vibrante (como links do DeepSeek)
+    azul_escuro: darkMode ? '#1f6feb' : '#003A6B', // Azul mais escuro
+    azul_claro: darkMode ? '#13233a' : '#E6F0FF', // Azul de fundo suave
+    laranja: darkMode ? '#f78166' : '#FF6B35', // Laranja (como botões do DeepSeek)
+    laranja_escuro: darkMode ? '#da3633' : '#D84315',
+    
+    // Cores neutras
+    branco: darkMode ? '#21262d' : '#FFFFFF',
+    cinza_claro: darkMode ? '#6e7681' : '#95a5a6',
+    cinza_medio: darkMode ? '#484f58' : '#bdc3c7',
+    cinza_escuro: darkMode ? '#30363d' : '#7f8c8d',
+    borda: darkMode ? '#30363d' : '#E2E8F0',
+    
+    // Cores de texto
+    texto: darkMode ? '#f0f6fc' : '#000000', // Texto principal (branco acinzentado)
+    texto_secundario: darkMode ? '#8b949e' : '#5C6B8A', // Texto secundário
+    texto_claro: darkMode ? '#6e7681' : '#95a5a6', // Texto menos importante
+    
+    // Estados
+    desativado: darkMode ? '#484f58' : '#CCCCCC',
+    sucesso: darkMode ? '#238636' : '#2ecc71',
+    erro: darkMode ? '#f85149' : '#e74c3c'
   };
 
   useEffect(() => {
@@ -190,8 +211,12 @@ export default function Home({ route, navigation }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: CORES_SENAI.azul_claro }]}>
-      <View style={[styles.header, { backgroundColor: CORES_SENAI.azul_principal }]}>
+    <View style={[styles.container, { backgroundColor: CORES_SENAI.fundo_principal }]}>
+      <View style={[styles.header, { 
+        backgroundColor: CORES_SENAI.fundo_header,
+        borderBottomWidth: 1,
+        borderBottomColor: CORES_SENAI.borda
+      }]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoSenai}>SENAI</Text>
@@ -203,8 +228,12 @@ export default function Home({ route, navigation }) {
         </View>
 
         <View style={styles.headerRight}>
-          <View style={[styles.saldoBox, { backgroundColor: CORES_SENAI.branco }]}>
-            <Text style={styles.saldoLabel}>Saldo disponível</Text>
+          <View style={[styles.saldoBox, { 
+            backgroundColor: CORES_SENAI.fundo_card,
+            borderWidth: 1,
+            borderColor: CORES_SENAI.borda
+          }]}>
+            <Text style={[styles.saldoLabel, { color: CORES_SENAI.texto_secundario }]}>Saldo disponível</Text>
             <Text style={[styles.saldoValor, { color: CORES_SENAI.azul_principal }]}>
               R$ {saldo.toFixed(2)}
             </Text>
@@ -212,17 +241,25 @@ export default function Home({ route, navigation }) {
 
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              style={[styles.extratoButton, { backgroundColor: CORES_SENAI.branco }]}
+              style={[styles.actionButton, { 
+                backgroundColor: CORES_SENAI.fundo_card,
+                borderWidth: 1,
+                borderColor: CORES_SENAI.borda
+              }]}
               onPress={irParaExtrato}
             >
-              <Text style={[styles.extratoIcon, { color: CORES_SENAI.azul_principal }]}>📊</Text>
+              <Text style={[styles.actionIcon, { color: CORES_SENAI.azul_principal }]}>📊</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.carrinhoButton, { backgroundColor: CORES_SENAI.branco }]}
+              style={[styles.actionButton, { 
+                backgroundColor: CORES_SENAI.fundo_card,
+                borderWidth: 1,
+                borderColor: CORES_SENAI.borda
+              }]}
               onPress={irParaCarrinho}
             >
-              <Text style={[styles.carrinhoIcon, { color: CORES_SENAI.azul_principal }]}>🛒</Text>
+              <Text style={[styles.actionIcon, { color: CORES_SENAI.azul_principal }]}>🛒</Text>
               {carrinho.length > 0 && (
                 <View style={[styles.carrinhoBadge, { backgroundColor: CORES_SENAI.laranja }]}>
                   <Text style={styles.carrinhoBadgeText}>{carrinho.length}</Text>
@@ -231,17 +268,25 @@ export default function Home({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.ticketsButton, { backgroundColor: CORES_SENAI.branco }]}
+              style={[styles.actionButton, { 
+                backgroundColor: CORES_SENAI.fundo_card,
+                borderWidth: 1,
+                borderColor: CORES_SENAI.borda
+              }]}
               onPress={irParaMeusTickets}
             >
-              <Text style={[styles.ticketsIcon, { color: CORES_SENAI.azul_principal }]}>🎫</Text>
+              <Text style={[styles.actionIcon, { color: CORES_SENAI.azul_principal }]}>🎫</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.settingsButton, { backgroundColor: CORES_SENAI.branco }]}
+              style={[styles.actionButton, { 
+                backgroundColor: CORES_SENAI.fundo_card,
+                borderWidth: 1,
+                borderColor: CORES_SENAI.borda
+              }]}
               onPress={irParaConfiguracoes}
             >
-              <Text style={[styles.settingsIcon, { color: CORES_SENAI.azul_principal }]}>⚙️</Text>
+              <Text style={[styles.actionIcon, { color: CORES_SENAI.azul_principal }]}>⚙️</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -249,7 +294,11 @@ export default function Home({ route, navigation }) {
 
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
-          style={[styles.adicionarSaldoButton, { backgroundColor: CORES_SENAI.azul_escuro }]}
+          style={[styles.adicionarSaldoButton, { 
+            backgroundColor: CORES_SENAI.azul_escuro,
+            borderWidth: 1,
+            borderColor: darkMode ? '#388bfd' : CORES_SENAI.azul_escuro
+          }]}
           onPress={irParaRecarregarSaldo}
         >
           <Text style={styles.adicionarSaldoText}>💰 Adicionar Saldo</Text>
@@ -257,7 +306,7 @@ export default function Home({ route, navigation }) {
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: CORES_SENAI.azul_escuro }]}>
+        <Text style={[styles.sectionTitle, { color: CORES_SENAI.texto }]}>
           🛍️ Produtos Disponíveis
         </Text>
         <Text style={[styles.sectionSubtitle, { color: CORES_SENAI.texto_secundario }]}>
@@ -268,7 +317,7 @@ export default function Home({ route, navigation }) {
       {carregando ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={CORES_SENAI.azul_principal} />
-          <Text style={[styles.loadingText, { color: CORES_SENAI.azul_escuro }]}>
+          <Text style={[styles.loadingText, { color: CORES_SENAI.texto }]}>
             Carregando produtos...
           </Text>
         </View>
@@ -278,7 +327,13 @@ export default function Home({ route, navigation }) {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.flatListContent}
           renderItem={({ item }) => (
-            <View style={[styles.produtoCard, { backgroundColor: CORES_SENAI.branco }]}>
+            <View style={[styles.produtoCard, { 
+              backgroundColor: CORES_SENAI.fundo_card,
+              borderColor: CORES_SENAI.borda,
+              borderWidth: 1,
+              borderLeftWidth: 4,
+              borderLeftColor: CORES_SENAI.azul_principal
+            }]}>
               <View style={styles.produtoInfo}>
                 <Text style={[styles.produtoNome, { color: CORES_SENAI.texto }]}>
                   {item.nome}
@@ -293,7 +348,11 @@ export default function Home({ route, navigation }) {
                 )}
 
                 {produtoAceitaTicket(item) && (
-                  <Text style={styles.ticketGratuitoInfo}>🎫 Disponível como Vale</Text>
+                  <View style={styles.ticketInfoContainer}>
+                    <Text style={[styles.ticketGratuitoInfo, { color: CORES_SENAI.laranja }]}>
+                      🎫 Disponível como Vale
+                    </Text>
+                  </View>
                 )}
               </View>
 
@@ -301,8 +360,15 @@ export default function Home({ route, navigation }) {
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
-                    { backgroundColor: CORES_SENAI.azul_principal },
-                    saldo < item.preco && styles.comprarButtonDisabled,
+                    { 
+                      backgroundColor: CORES_SENAI.azul_principal,
+                      borderWidth: 1,
+                      borderColor: darkMode ? '#388bfd' : CORES_SENAI.azul_principal
+                    },
+                    saldo < item.preco && [styles.comprarButtonDisabled, { 
+                      backgroundColor: CORES_SENAI.desativado,
+                      borderColor: CORES_SENAI.cinza_medio
+                    }],
                   ]}
                   onPress={() => comprarProduto(item)}
                   disabled={saldo < item.preco}
@@ -314,7 +380,14 @@ export default function Home({ route, navigation }) {
 
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
-                    style={[styles.ticketGratuitoButton, { backgroundColor: CORES_SENAI.laranja }]}
+                    style={[
+                      styles.ticketGratuitoButton, 
+                      { 
+                        backgroundColor: CORES_SENAI.laranja,
+                        borderWidth: 1,
+                        borderColor: darkMode ? '#f78166' : CORES_SENAI.laranja
+                      }
+                    ]}
                     onPress={() => pegarTicketGratuito(item)}
                     disabled={loadingTicket}
                   >
@@ -328,8 +401,15 @@ export default function Home({ route, navigation }) {
                   <TouchableOpacity
                     style={[
                       styles.ticketButton,
-                      { backgroundColor: CORES_SENAI.azul_escuro },
-                      saldo < item.preco && styles.comprarButtonDisabled,
+                      { 
+                        backgroundColor: CORES_SENAI.azul_escuro,
+                        borderWidth: 1,
+                        borderColor: darkMode ? '#1f6feb' : CORES_SENAI.azul_escuro
+                      },
+                      saldo < item.preco && [styles.comprarButtonDisabled, {
+                        backgroundColor: CORES_SENAI.desativado,
+                        borderColor: CORES_SENAI.cinza_medio
+                      }],
                     ]}
                     onPress={() => comprarTicketProduto(item)}
                     disabled={saldo < item.preco || loadingTicket}
@@ -359,11 +439,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
     paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 5,
   },
   headerLeft: {
     flex: 1,
@@ -401,17 +476,11 @@ const styles = StyleSheet.create({
   saldoBox: {
     alignItems: 'center',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     minWidth: 100,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
   },
   saldoLabel: {
     fontSize: 12,
-    color: '#5C6B8A',
     fontWeight: '600',
   },
   saldoValor: {
@@ -419,65 +488,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
   },
-  extratoButton: {
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  extratoIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  carrinhoButton: {
-    padding: 12,
-    borderRadius: 12,
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  carrinhoAddText:{
-    color: '#005CA9',
-    fontWeight: 'bold',
-    border: '1px solid #005CA9',
-    paddingVertical: 6,
-    backgroundColor: '#E6F0FF',
+  actionButton: {
+    padding: 10,
     borderRadius: 8,
+    position: 'relative',
   },
-  ticketsButton: {
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  settingsButton: {
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  carrinhoIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  ticketsIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  settingsIcon: {
-    fontSize: 18,
+  actionIcon: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
   carrinhoBadge: {
@@ -490,7 +507,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#161b22',
   },
   carrinhoBadgeText: {
     color: '#FFFFFF',
@@ -499,19 +516,19 @@ const styles = StyleSheet.create({
   },
   botoesSuperiores: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   adicionarSaldoButton: {
     paddingVertical: 12,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   adicionarSaldoText: {
     color: '#FFFFFF',
@@ -549,16 +566,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   produtoCard: {
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#005CA9',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 2,
   },
   produtoInfo: {
     marginBottom: 12,
@@ -576,12 +591,14 @@ const styles = StyleSheet.create({
   produtoDescricao: {
     fontSize: 13,
     fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  ticketInfoContainer: {
+    marginTop: 8,
   },
   ticketGratuitoInfo: {
     fontSize: 12,
-    color: '#FF6B35',
     fontWeight: '600',
-    marginTop: 4,
   },
   botoesContainer: {
     flexDirection: 'row',
@@ -591,11 +608,12 @@ const styles = StyleSheet.create({
   comprarButton: {
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 6,
     flex: 1,
+    alignItems: 'center',
   },
   comprarButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    opacity: 0.7,
   },
   comprarText: {
     color: '#FFFFFF',
@@ -606,14 +624,16 @@ const styles = StyleSheet.create({
   ticketGratuitoButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     flex: 1,
+    alignItems: 'center',
   },
   ticketButton: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     flex: 1,
+    alignItems: 'center',
   },
   ticketText: {
     color: '#FFFFFF',
