@@ -7,16 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  StatusBar,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/database';
-import { useTheme } from '../context/themeContext';
 
 export default function Login() {
   const navigation = useNavigation();
-  const { darkMode } = useTheme();
-  
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [nome, setNome] = useState('');
   const [matricula, setMatricula] = useState('');
   const [errors, setErrors] = useState({});
@@ -41,12 +39,13 @@ export default function Login() {
         .single();
 
       if (prodError || !produtoPadrao) {
-        Alert.alert('Erro', 'Não foi possível criar seu vale grátis (produto não encontrado).');
+        Alert.alert('Erro', 'Não foi possível criar seu vale grátis.');
         setCriandoTicket(false);
         return null;
       }
 
       const ticketCode = `TKT-GRATIS-LOGIN-${usuario.id}-${Date.now()}`;
+
       const { error: ticketError } = await supabase
         .from('cantina_tickets')
         .insert([{
@@ -69,12 +68,14 @@ export default function Login() {
         }]);
 
       if (ticketError) {
-        Alert.alert('Erro ao criar ticket', 'Pode ser regra de segurança (RLS) bloqueando vale. Chame um admin!');
+        Alert.alert('Erro ao criar ticket', 'RLS pode estar bloqueando.');
         setCriandoTicket(false);
         return null;
       }
+
       setCriandoTicket(false);
-      Alert.alert('🎫 Vale resgatado!', `Você já ganhou seu vale grátis para ${produtoPadrao.nome}.`);
+      Alert.alert('🎫 Vale criado!', `Você ganhou um vale para ${produtoPadrao.nome}.`);
+
     } catch (error) {
       setCriandoTicket(false);
       Alert.alert('Falha ao criar vale', error.message);
@@ -85,9 +86,8 @@ export default function Login() {
   const handleCadastrar = async () => {
     const novosErros = {};
 
-    if (!validarNome(nome)) novosErros.nome = 'Nome inválido. Use apenas letras e espaços.';
-    if (!validarMatricula(matricula))
-      novosErros.matricula = 'Matrícula inválida. Deve ter pelo menos 6 números.';
+    if (!validarNome(nome)) novosErros.nome = 'Nome inválido.';
+    if (!validarMatricula(matricula)) novosErros.matricula = 'Matrícula inválida.';
 
     setErrors(novosErros);
 
@@ -106,16 +106,6 @@ export default function Login() {
 
         if (data && data.length > 0) {
           const usuario = data[0];
-          
-          // VERIFICAÇÃO DE CONTA ATIVA
-          if (usuario.ativo === false) {
-            Alert.alert(
-              'Conta Desativada',
-              'Sua conta está desativada. Entre em contato com o administrador.',
-              [{ text: 'OK' }]
-            );
-            return;
-          }
 
           if (usuario.tipo === 'admin') {
             navigation.navigate('AdminDashboard', { usuario });
@@ -124,60 +114,45 @@ export default function Login() {
             navigation.navigate('Home', { usuario });
           }
         } else {
-          setErrors({ geral: 'Nome ou matrícula incorretos. Verifique os dados.' });
+          setErrors({ geral: 'Nome ou matrícula incorretos.' });
         }
       } catch (error) {
-        setErrors({ geral: 'Erro de conexão' });
+        setErrors({ geral: 'Erro de conexão.' });
       }
     }
   };
 
-  const dynamicStyles = {
-    container: {
-      backgroundColor: darkMode ? '#1E3A8A' : '#3B82F6',
-    },
-    text: {
-      color: darkMode ? '#FFFFFF' : '#FFFFFF',
-    },
-    input: {
-      backgroundColor: darkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255,255,255,0.9)',
-      borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.3)',
-      color: darkMode ? '#FFFFFF' : '#000000',
-    },
-    placeholder: {
-      color: darkMode ? '#aaa' : '#666',
-    }
-  };
-
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      <StatusBar barStyle="light-content" />
-      
+    <View style={[styles.container, isDarkMode ? styles.darkBG : styles.lightBG]}>
       <ScrollView style={styles.scrollView}>
-        <View style={[styles.tituloContainer]}>
-          <Text style={[styles.tituloLogin]}>
-            Login
-          </Text>
+
+        <View style={styles.headerContainer}>
+
+          {/* 🔥 LOGO DO SENAI NO TOPO */}
+          <Image
+            source={{ uri: 'https://logodownload.org/wp-content/uploads/2019/08/senai-logo-1.png' }}
+            style={styles.logo}
+          />
+
+          <Text style={styles.headerTitle}>Login</Text>
         </View>
 
-        <View style={styles.loginContainer}>
-          <Text style={[styles.title, dynamicStyles.text]}>
-            Sistema de Acesso
-          </Text>
-          
+        <View style={styles.loginWrapper}>
+          <Text style={styles.sectionTitle}></Text>
+
           <TextInput
-            style={[styles.input, dynamicStyles.input]}
+            style={[styles.input]}
             placeholder="Nome"
-            placeholderTextColor={dynamicStyles.placeholder.color}
+            placeholderTextColor="#8BA3C7"
             value={nome}
             onChangeText={setNome}
           />
           {errors.nome && <Text style={styles.error}>{errors.nome}</Text>}
 
           <TextInput
-            style={[styles.input, dynamicStyles.input]}
+            style={[styles.input]}
             placeholder="Matrícula"
-            placeholderTextColor={dynamicStyles.placeholder.color}
+            placeholderTextColor="#8BA3C7"
             keyboardType="numeric"
             value={matricula}
             onChangeText={setMatricula}
@@ -185,122 +160,123 @@ export default function Login() {
           {errors.matricula && <Text style={styles.error}>{errors.matricula}</Text>}
 
           {errors.geral && <Text style={styles.error}>{errors.geral}</Text>}
-          {criandoTicket && (
-            <Text style={styles.infoTicket}>Resgatando vale gratuito...</Text>
-          )}
+          {criandoTicket && <Text style={styles.info}>Gerando vale gratuito...</Text>}
 
-          <TouchableOpacity 
-            style={[styles.button, styles.primaryButton]} 
-            onPress={handleCadastrar} 
-            disabled={criandoTicket}
-          >
-            <Text style={styles.buttonText}>Entrar no Sistema</Text>
+          <TouchableOpacity style={[styles.button, styles.primaryBtn]} onPress={handleCadastrar}>
+            <Text style={styles.buttonText}>Entrar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.button, styles.secondaryButton]} 
-            onPress={limparCampos} 
-            disabled={criandoTicket}
-          >
+          <TouchableOpacity style={[styles.button, styles.secondaryBtn]} onPress={limparCampos}>
             <Text style={styles.buttonText}>Limpar Campos</Text>
           </TouchableOpacity>
+
         </View>
+
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+
+  lightBG: {
+    backgroundColor: '#2563EB',
   },
+
+  darkBG: {
+    backgroundColor: '#1E293B',
+  },
+
   scrollView: {
     flex: 1,
-    padding: 24,
+    padding: 28,
   },
-  tituloContainer: {
+
+  headerContainer: {
     alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 60,
+    marginBottom: 40,
+    marginTop: 10,
   },
-  tituloLogin: {
-    fontSize: 28,
-    fontWeight: 'bold',
+
+  logo: {
+    width: 190,
+    height: 60,
+    resizeMode: 'contain',
+    marginBottom: 10
+  },
+
+  headerTitle: {
+    fontSize: 36,
+    fontWeight: '99',
+    color: '#FFFFFF',
+    letterSpacing: 4
+  },
+
+  loginWrapper: {
+    width: '100%',
+  },
+
+  sectionTitle: {
+    fontSize: 30,
+    fontWeight: '800',
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  loginContainer: {
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 32,
     marginBottom: 30,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    color: '#FFFFFF',
   },
+
   input: {
-    height: 56,
+    height: 58,
     borderWidth: 2,
-    borderRadius: 12,
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
+    paddingHorizontal: 18,
     marginBottom: 16,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 17,
+    color: '#FFFFFF',
     fontWeight: '500',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
+
   error: {
     color: '#FF6B6B',
     marginBottom: 12,
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  infoTicket: {
-    color: '#FFF91C',
-    marginBottom: 8,
-    marginLeft: 8,
+    marginLeft: 6,
     fontSize: 14,
     fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
+
+  info: {
+    color: '#FFF93B',
+    marginBottom: 14,
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   button: {
-    borderRadius: 12,
-    marginTop: 12,
+    borderRadius: 14,
     padding: 16,
     alignItems: 'center',
+    marginTop: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 5,
   },
-  primaryButton: {
-    backgroundColor: '#3B82F6',
+
+  primaryBtn: {
+    backgroundColor: '#1E40AF',
   },
-  secondaryButton: {
-    backgroundColor: '#6B7280',
+
+  secondaryBtn: {
+    backgroundColor: '#475569',
   },
+
   buttonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: '800',
+  }
 });
