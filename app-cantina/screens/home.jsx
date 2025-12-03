@@ -432,165 +432,193 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
+  /* HEADER */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    padding: 24,
+    paddingTop: 55,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
   },
   headerLeft: {
     flex: 1,
   },
   logoContainer: {
-    marginBottom: 8,
+    marginBottom: 10,
   },
   logoSenai: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 1,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: '#fff',
   },
   logoPalhoca: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.9,
+    opacity: 0.85,
+    color: '#fff',
+    marginTop: -2,
   },
   subtitle: {
-    color: '#FFFFFF',
-    marginTop: 2,
     fontSize: 14,
-    opacity: 0.9,
+    opacity: 0.8,
+    color: '#fff',
+    marginTop: 6,
   },
+
   headerRight: {
     alignItems: 'flex-end',
+    gap: 10,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
+
   saldoBox: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    minWidth: 100,
+    minWidth: 110,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
+
   saldoLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   saldoValor: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginTop: 4,
   },
+
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+
   actionButton: {
-    padding: 10,
-    borderRadius: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
     position: 'relative',
   },
+
   actionIcon: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
+
   carrinhoBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -3,
+    right: -3,
+    backgroundColor: '#FF6B35',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#161b22',
   },
   carrinhoBadgeText: {
-    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+    color: '#fff',
   },
+
+  /* BOTÃO SUPERIOR */
   botoesSuperiores: {
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 16,
-    alignItems: 'center',
+    paddingVertical: 18,
   },
   adicionarSaldoButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: 14,
+    paddingHorizontal: 35,
+    borderRadius: 12,
+    elevation: 4,
   },
   adicionarSaldoText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 16,
+    textAlign: 'center',
   },
+
+  /* TÍTULOS */
   sectionHeader: {
-    marginBottom: 16,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingVertical: 8,
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '800',
     textAlign: 'center',
+    marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
+    opacity: 0.8,
     textAlign: 'center',
   },
+
+  /* LOADING */
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: 50,
     alignItems: 'center',
-    marginTop: 40,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
     fontWeight: '500',
   },
+
+  /* LISTA */
   flatListContent: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
+
+  /* CARD PRODUTO */
   produtoCard: {
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
+
   produtoInfo: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   produtoNome: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     marginBottom: 4,
   },
   produtoPreco: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontWeight: '800',
+    marginBottom: 6,
   },
   produtoDescricao: {
     fontSize: 13,
-    fontStyle: 'italic',
+    opacity: 0.7,
     lineHeight: 18,
   },
   ticketInfoContainer: {
@@ -598,47 +626,46 @@ const styles = StyleSheet.create({
   },
   ticketGratuitoInfo: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
+
+  /* BOTÕES PRODUTO */
   botoesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 8,
   },
   comprarButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 6,
     flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
   },
   comprarButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   comprarText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 13,
-    textAlign: 'center',
   },
+
   ticketGratuitoButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 6,
     flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
   },
+
   ticketButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 6,
     flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: 'center',
   },
+
   ticketText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '700',
     fontSize: 12,
-    textAlign: 'center',
   },
 });
