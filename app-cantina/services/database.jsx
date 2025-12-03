@@ -462,3 +462,102 @@ export const verificarAdmin = async (usuarioId) => {
     return false;
   }
 };
+
+export const uploadProfileImage = async (userId, imageUri) => {
+  try {
+    console.log('📤 Iniciando upload para usuário:', userId);
+    console.log('📸 URI da imagem:', imageUri);
+    
+    const filename = imageUri.split('/').pop();
+    const match = filename.match(/\.(\w+)$/);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    
+    console.log('📄 Nome do arquivo:', filename);
+    console.log('📎 Tipo do arquivo:', type);
+    
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    
+    const fileExt = filename.split('.').pop();
+    const path = `profile_${userId}_${Date.now()}.${fileExt}`;
+    
+    console.log('🗂️ Caminho do arquivo:', path);
+    
+    const { data, error } = await supabase.storage
+      .from('profile-images')
+      .upload(path, blob, {
+        contentType: type,
+        upsert: true
+      });
+
+    if (error) {
+      console.error('❌ Erro no upload:', error);
+      throw error;
+    }
+
+    console.log('✅ Upload realizado:', data);
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('profile-images')
+      .getPublicUrl(path);
+
+    console.log('🔗 URL pública:', publicUrl);
+
+    const { error: updateError } = await supabase
+      .from('usuarios')
+      .update({ profile_image: publicUrl })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ Erro ao atualizar usuário:', updateError);
+      throw updateError;
+    }
+
+    console.log('🎉 Imagem atualizada no banco');
+    return publicUrl;
+  } catch (error) {
+    console.error('💥 Erro completo:', error);
+    throw error;
+  }
+};
+
+export const deleteProfileImage = async (userId) => {
+  try {
+    const { data: userData, error: fetchError } = await supabase
+      .from('usuarios')
+      .select('profile_image')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    if (userData?.profile_image) {
+      const url = userData.profile_image;
+      const fileNameMatch = url.match(/profile-images\/([^?]+)/);
+      
+      if (fileNameMatch) {
+        const filePath = fileNameMatch[0];
+        
+        const { error: deleteError } = await supabase.storage
+          .from('profile-images')
+          .remove([filePath]);
+
+        if (deleteError) {
+          console.warn('⚠️ Não foi possível deletar do storage:', deleteError);
+        }
+      }
+    }
+
+    const { error: updateError } = await supabase
+      .from('usuarios')
+      .update({ profile_image: null })
+      .eq('id', userId);
+
+    if (updateError) throw updateError;
+
+    return true;
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error);
+    throw error;
+  }
+};

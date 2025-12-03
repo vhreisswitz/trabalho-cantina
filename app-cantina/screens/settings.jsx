@@ -12,12 +12,13 @@ import {
   Alert,
   Linking,
   Modal,
-  TextInput,
   SafeAreaView
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/themeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { uploadProfileImage, deleteProfileImage } from '../services/database';
 
 export default function Settings({ navigation, route }) {
   const usuario = route.params?.usuario || { 
@@ -31,18 +32,20 @@ export default function Settings({ navigation, route }) {
   const [language, setLanguage] = useState('Português');
   const [darkModeModal, setDarkModeModal] = useState(false);
   const [paymentMethodsCount, setPaymentMethodsCount] = useState(0);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [userPhoto, setUserPhoto] = useState(null);
   
   const [scaleAnim] = useState(new Animated.Value(1));
 
   const { darkMode, setTheme } = useTheme();
 
-  // Carregar contagem de métodos de pagamento
   useEffect(() => {
     loadPaymentCount();
+    loadUserPhoto();
     
-    // Atualizar sempre que a tela for focada
     const unsubscribe = navigation.addListener('focus', () => {
       loadPaymentCount();
+      loadUserPhoto();
     });
     
     return unsubscribe;
@@ -61,6 +64,138 @@ export default function Settings({ navigation, route }) {
       console.error('Erro ao carregar contagem:', error);
       setPaymentMethodsCount(0);
     }
+  };
+
+  const loadUserPhoto = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId) {
+        const storedPhoto = await AsyncStorage.getItem(`@user_photo_${userId}`);
+        if (storedPhoto && storedPhoto !== 'null') {
+          setUserPhoto(storedPhoto);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar foto:', error);
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadUserImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível selecionar a imagem');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos acessar sua câmera!');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadUserImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível tirar a foto');
+    }
+  };
+
+  // Altere a função uploadUserImage no settings.jsx para:
+const uploadUserImage = async (imageUri) => {
+  setUploadingPhoto(true);
+  try {
+    const userId = await AsyncStorage.getItem('userId');
+    
+    if (!userId) {
+      throw new Error('Usuário não identificado');
+    }
+
+    console.log('📱 Iniciando upload da imagem...');
+    console.log('👤 User ID:', userId);
+    console.log('🖼️ Image URI:', imageUri);
+
+    const imageUrl = await uploadProfileImage(userId, imageUri);
+    
+    console.log('✅ Upload concluído. URL:', imageUrl);
+    
+    await AsyncStorage.setItem(`@user_photo_${userId}`, imageUrl);
+    setUserPhoto(imageUrl);
+
+    Alert.alert('Sucesso!', 'Foto atualizada com sucesso');
+  } catch (error) {
+    console.error('❌ Erro no upload:', error);
+    Alert.alert('Erro', `Falha ao enviar a imagem: ${error.message || 'Erro desconhecido'}`);
+  } finally {
+    setUploadingPhoto(false);
+  }
+};
+
+  const removePhoto = async () => {
+    Alert.alert(
+      'Remover foto',
+      'Tem certeza que deseja remover sua foto de perfil?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStorage.getItem('userId');
+              await deleteProfileImage(userId);
+              
+              await AsyncStorage.removeItem(`@user_photo_${userId}`);
+              setUserPhoto(null);
+
+              Alert.alert('Sucesso', 'Foto removida com sucesso');
+            } catch (error) {
+              Alert.alert('Erro', 'Falha ao remover foto');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleChangePhoto = () => {
+    const options = [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Tirar foto', onPress: takePhoto },
+      { text: 'Escolher da galeria', onPress: pickImage },
+    ];
+
+    if (userPhoto) {
+      options.push({
+        text: 'Remover foto atual',
+        style: 'destructive',
+        onPress: removePhoto,
+      });
+    }
+
+    Alert.alert(
+      'Alterar Foto de Perfil',
+      'Escolha uma opção:',
+      options
+    );
   };
 
   const toggleDarkMode = (value) => {
@@ -133,10 +268,7 @@ export default function Settings({ navigation, route }) {
     );
   };
 
-  // FUNÇÃO CORRIGIDA - Agora navega para 'PaymentMethods'
   const handlePaymentMethods = () => {
-    console.log('Tentando navegar para PaymentMethods');
-    console.log('Usuário:', usuario);
     navigation.navigate('PaymentMethods', { 
       usuario,
       darkMode,
@@ -370,13 +502,26 @@ export default function Settings({ navigation, route }) {
           <View style={[styles.profileSection, darkMode && styles.darkSection]}>
             <TouchableOpacity 
               style={styles.avatarContainer}
-              onPress={handlePersonalInfo}
+              onPress={handleChangePhoto}
               activeOpacity={0.7}
+              disabled={uploadingPhoto}
             >
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
-                style={styles.avatar}
-              />
+              {userPhoto ? (
+                <Image 
+                  source={{ uri: userPhoto }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face' }}
+                  style={styles.avatar}
+                />
+              )}
+              {uploadingPhoto && (
+                <View style={styles.uploadingOverlay}>
+                  <Ionicons name="sync" size={24} color="#FFFFFF" />
+                </View>
+              )}
               <View style={styles.onlineIndicator} />
               <View style={styles.editBadge}>
                 <Ionicons name="camera-outline" size={12} color="#FFFFFF" />
@@ -386,11 +531,11 @@ export default function Settings({ navigation, route }) {
             <Text style={[styles.userEmail, darkMode && styles.darkSubtext]}>{usuario.email}</Text>
             <TouchableOpacity 
               style={[styles.editProfileButton, darkMode && styles.darkEditButton]}
-              onPress={handlePersonalInfo}
+              onPress={handleChangePhoto}
               activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={16} color="#007AFF" />
-              <Text style={styles.editProfileText}>Editar Perfil</Text>
+              <Ionicons name="camera-outline" size={16} color="#007AFF" />
+              <Text style={styles.editProfileText}>Alterar Foto</Text>
             </TouchableOpacity>
           </View>
 
@@ -596,6 +741,17 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 3,
     borderColor: '#007AFF',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   onlineIndicator: {
     position: 'absolute',
