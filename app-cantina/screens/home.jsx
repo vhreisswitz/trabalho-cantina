@@ -147,30 +147,6 @@ export default function Home({ route, navigation }) {
     );
   }
 
-  async function comprarTicketProduto(produto) {
-    if (!usuario) return Alert.alert('Erro', 'Usuário não identificado.');
-
-    Alert.alert(
-      'Comprar Vale',
-      `Deseja comprar um vale para ${produto.nome} por R$ ${produto.preco}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Comprar Vale',
-          onPress: async () => {
-            const resultado = await comprarTicket(produto.id, usuario.id, saldo);
-            if (resultado) {
-              atualizarSaldo(resultado.novoSaldo);
-              navigation.navigate('TicketDigital', {
-                ticket: resultado.ticket,
-                usuario: { ...usuario, saldo: resultado.novoSaldo }
-              });
-            }
-          }
-        }
-      ]
-    );
-  }
 
   function irParaCarrinho() {
     if (carrinho.length === 0) {
@@ -398,22 +374,10 @@ export default function Home({ route, navigation }) {
                 )}
 
                 {produtoAceitaTicket(item) && (
-                  <TouchableOpacity
-                    style={[
-                      styles.ticketButton,
-                      { 
-                        backgroundColor: CORES_SENAI.azul_escuro,
-                        borderWidth: 1,
-                        borderColor: darkMode ? '#1f6feb' : CORES_SENAI.azul_escuro
-                      },
-                      saldo < item.preco && [styles.comprarButtonDisabled, {
-                        backgroundColor: CORES_SENAI.desativado,
-                        borderColor: CORES_SENAI.cinza_medio
-                      }],
-                    ]}
-                    onPress={() => comprarTicketProduto(item)}
-                    disabled={saldo < item.preco || loadingTicket}
-                  >
+                   <TouchableOpacity
+                   style={styles.carrinhoAddButton}
+                   onPress={() => adicionarAoCarrinho(item)}
+                 >
                     <Text style={styles.ticketText}>
                       {loadingTicket ? '...' : 'Comprar Vale'}
                     </Text>
