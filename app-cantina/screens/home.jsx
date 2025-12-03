@@ -35,26 +35,26 @@ export default function Home({ route, navigation }) {
     fundo_header: darkMode ? '#161b22' : '#005CA9', // Header (cinza escuro)
     fundo_card: darkMode ? '#21262d' : '#FFFFFF', // Cards (cinza médio-escuro)
     fundo_elevated: darkMode ? '#30363d' : '#F8F9FA', // Elementos elevados
-    
+
     // Cores de destaque
     azul_principal: darkMode ? '#58a6ff' : '#005CA9', // Azul vibrante (como links do DeepSeek)
     azul_escuro: darkMode ? '#1f6feb' : '#003A6B', // Azul mais escuro
     azul_claro: darkMode ? '#13233a' : '#E6F0FF', // Azul de fundo suave
     laranja: darkMode ? '#f78166' : '#FF6B35', // Laranja (como botões do DeepSeek)
     laranja_escuro: darkMode ? '#da3633' : '#D84315',
-    
+
     // Cores neutras
     branco: darkMode ? '#21262d' : '#FFFFFF',
     cinza_claro: darkMode ? '#6e7681' : '#95a5a6',
     cinza_medio: darkMode ? '#484f58' : '#bdc3c7',
     cinza_escuro: darkMode ? '#30363d' : '#7f8c8d',
     borda: darkMode ? '#30363d' : '#E2E8F0',
-    
+
     // Cores de texto
     texto: darkMode ? '#f0f6fc' : '#000000', // Texto principal (branco acinzentado)
     texto_secundario: darkMode ? '#8b949e' : '#5C6B8A', // Texto secundário
     texto_claro: darkMode ? '#6e7681' : '#95a5a6', // Texto menos importante
-    
+
     // Estados
     desativado: darkMode ? '#484f58' : '#CCCCCC',
     sucesso: darkMode ? '#238636' : '#2ecc71',
@@ -188,7 +188,7 @@ export default function Home({ route, navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: CORES_SENAI.fundo_principal }]}>
-      <View style={[styles.header, { 
+      <View style={[styles.header, {
         backgroundColor: CORES_SENAI.fundo_header,
         borderBottomWidth: 1,
         borderBottomColor: CORES_SENAI.borda
@@ -204,7 +204,7 @@ export default function Home({ route, navigation }) {
         </View>
 
         <View style={styles.headerRight}>
-          <View style={[styles.saldoBox, { 
+          <View style={[styles.saldoBox, {
             backgroundColor: CORES_SENAI.fundo_card,
             borderWidth: 1,
             borderColor: CORES_SENAI.borda
@@ -217,7 +217,7 @@ export default function Home({ route, navigation }) {
 
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              style={[styles.actionButton, { 
+              style={[styles.actionButton, {
                 backgroundColor: CORES_SENAI.fundo_card,
                 borderWidth: 1,
                 borderColor: CORES_SENAI.borda
@@ -228,7 +228,7 @@ export default function Home({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { 
+              style={[styles.actionButton, {
                 backgroundColor: CORES_SENAI.fundo_card,
                 borderWidth: 1,
                 borderColor: CORES_SENAI.borda
@@ -244,7 +244,7 @@ export default function Home({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { 
+              style={[styles.actionButton, {
                 backgroundColor: CORES_SENAI.fundo_card,
                 borderWidth: 1,
                 borderColor: CORES_SENAI.borda
@@ -255,7 +255,7 @@ export default function Home({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionButton, { 
+              style={[styles.actionButton, {
                 backgroundColor: CORES_SENAI.fundo_card,
                 borderWidth: 1,
                 borderColor: CORES_SENAI.borda
@@ -270,7 +270,7 @@ export default function Home({ route, navigation }) {
 
       <View style={styles.botoesSuperiores}>
         <TouchableOpacity
-          style={[styles.adicionarSaldoButton, { 
+          style={[styles.adicionarSaldoButton, {
             backgroundColor: CORES_SENAI.azul_escuro,
             borderWidth: 1,
             borderColor: darkMode ? '#388bfd' : CORES_SENAI.azul_escuro
@@ -303,7 +303,7 @@ export default function Home({ route, navigation }) {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.flatListContent}
           renderItem={({ item }) => (
-            <View style={[styles.produtoCard, { 
+            <View style={[styles.produtoCard, {
               backgroundColor: CORES_SENAI.fundo_card,
               borderColor: CORES_SENAI.borda,
               borderWidth: 1,
@@ -336,12 +336,12 @@ export default function Home({ route, navigation }) {
                 <TouchableOpacity
                   style={[
                     styles.comprarButton,
-                    { 
+                    {
                       backgroundColor: CORES_SENAI.azul_principal,
                       borderWidth: 1,
                       borderColor: darkMode ? '#388bfd' : CORES_SENAI.azul_principal
                     },
-                    saldo < item.preco && [styles.comprarButtonDisabled, { 
+                    saldo < item.preco && [styles.comprarButtonDisabled, {
                       backgroundColor: CORES_SENAI.desativado,
                       borderColor: CORES_SENAI.cinza_medio
                     }],
@@ -357,8 +357,8 @@ export default function Home({ route, navigation }) {
                 {produtoAceitaTicket(item) && (
                   <TouchableOpacity
                     style={[
-                      styles.ticketGratuitoButton, 
-                      { 
+                      styles.ticketGratuitoButton,
+                      {
                         backgroundColor: CORES_SENAI.laranja,
                         borderWidth: 1,
                         borderColor: darkMode ? '#f78166' : CORES_SENAI.laranja
@@ -374,13 +374,10 @@ export default function Home({ route, navigation }) {
                 )}
 
                 {produtoAceitaTicket(item) && (
-                   <TouchableOpacity
-                   style={styles.carrinhoAddButton}
-                   onPress={() => adicionarAoCarrinho(item)}
-                 >
-                    <Text style={styles.ticketText}>
-                      {loadingTicket ? '...' : 'Comprar Vale'}
-                    </Text>
+                  <TouchableOpacity
+                    style={styles.carrinhoAddButton}
+                    onPress={() => adicionarAoCarrinho(item)}
+                  ><Text style={styles.carrinhoAddText}>+ Carrinho</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -477,6 +474,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  carrinhoAddButton: {
+    marginLeft: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: '#FFA500',
+    flex: 1,
+    alignItems: 'center',
+  },
+  carrinhoAddText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+    textAlign: 'center',
   },
   botoesSuperiores: {
     paddingHorizontal: 16,
