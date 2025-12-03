@@ -38,6 +38,46 @@ export default function Settings({ navigation, route }) {
   const [scaleAnim] = useState(new Animated.Value(1));
 
   const { darkMode, setTheme } = useTheme();
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+useEffect(() => {
+  loadProfilePhoto();
+}, []);
+
+const loadProfilePhoto = async () => {
+  try {
+    const saved = await AsyncStorage.getItem('@profile_photo');
+    if (saved) setProfilePhoto(saved);
+  } catch (e) {
+    console.log("Erro ao carregar foto:", e);
+  }
+  const handleChangePhoto = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permissão negada", "Habilite o acesso às fotos para continuar.");
+        return;
+      }
+  
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+  
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        setProfilePhoto(uri);
+        await AsyncStorage.setItem('@profile_photo', uri);
+      }
+    } catch (err) {
+      console.log("Erro ao mudar foto:", err);
+    }
+  };
+  
+};
+
 
   useEffect(() => {
     loadPaymentCount();
