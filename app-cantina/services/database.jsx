@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const supabaseUrl = "https://aoknqmjavdiwfxceehvs.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFva25xbWphdmRpd2Z4Y2VlaHZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MjY4MDksImV4cCI6MjA3NjAwMjgwOX0.vABbF0FdtoqREoOAxIsxEp0358u57ItH6SwBlLguU4c";
@@ -439,85 +440,65 @@ export const adminFunctions = {
 
 export const verificarAdmin = async (usuarioId) => {
   try {
-    console.log('🔍 Verificando admin para ID:', usuarioId);
-
     const { data, error } = await supabase
       .from('usuarios')
       .select('tipo')
       .eq('id', usuarioId)
       .single();
 
-    if (error) {
-      console.error('❌ Erro ao buscar usuário:', error);
-      return false;
-    }
+    if (error) return false;
 
-    console.log('📋 Dados retornados:', data);
     const isAdmin = data?.tipo === 'admin';
-    console.log('🎯 Resultado:', isAdmin);
-
     return isAdmin;
   } catch (error) {
-    console.error('💥 Erro na verificação:', error);
     return false;
   }
 };
 
 export const uploadProfileImage = async (userId, imageUri) => {
   try {
-    console.log('📤 Iniciando upload para usuário:', userId);
-    console.log('📸 URI da imagem:', imageUri);
-    
     const filename = imageUri.split('/').pop();
-    const match = filename.match(/\.(\w+)$/);
+    const match = /\.(\w+)$/.exec(filename);
     const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    console.log('📄 Nome do arquivo:', filename);
-    console.log('📎 Tipo do arquivo:', type);
-    
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
     
     const fileExt = filename.split('.').pop();
     const path = `profile_${userId}_${Date.now()}.${fileExt}`;
     
-    console.log('🗂️ Caminho do arquivo:', path);
-    
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageUri,
+      type: type,
+      name: filename
+    });
+
     const { data, error } = await supabase.storage
       .from('profile-images')
-      .upload(path, blob, {
+      .upload(path, formData, {
         contentType: type,
         upsert: true
       });
 
-    if (error) {
-      console.error('❌ Erro no upload:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('✅ Upload realizado:', data);
-    
     const { data: { publicUrl } } = supabase.storage
       .from('profile-images')
       .getPublicUrl(path);
-
-    console.log('🔗 URL pública:', publicUrl);
 
     const { error: updateError } = await supabase
       .from('usuarios')
       .update({ profile_image: publicUrl })
       .eq('id', userId);
 
-    if (updateError) {
-      console.error('❌ Erro ao atualizar usuário:', updateError);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
-    console.log('🎉 Imagem atualizada no banco');
     return publicUrl;
   } catch (error) {
-    console.error('💥 Erro completo:', error);
-    throw error;
+    try {
+      await AsyncStorage.setItem(`@local_profile_${userId}`, imageUri);
+      return imageUri;
+    } catch (storageError) {
+      throw error;
+    }
   }
 };
 
@@ -543,7 +524,7 @@ export const deleteProfileImage = async (userId) => {
           .remove([filePath]);
 
         if (deleteError) {
-          console.warn('⚠️ Não foi possível deletar do storage:', deleteError);
+          console.warn('Não foi possível deletar do storage:', deleteError);
         }
       }
     }
@@ -555,9 +536,50 @@ export const deleteProfileImage = async (userId) => {
 
     if (updateError) throw updateError;
 
+    await AsyncStorage.removeItem(`@local_profile_${userId}`);
+
     return true;
   } catch (error) {
-    console.error('Erro ao deletar imagem:', error);
+    throw error;
+  }
+};
+
+export const getUsuarioData = async (userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+
+    const localPhoto = await AsyncStorage.getItem(`@local_profile_${userId}`);
+    const profileImage = localPhoto || data.profile_image;
+
+    return {
+      ...data,
+      profile_image: profileImage,
+      saldo: parseFloat(data.saldo) || 0,
+      tipo: data.tipo || 'student'
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateUsuarioProfile = async (userId, updateData) => {
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
     throw error;
   }
 };

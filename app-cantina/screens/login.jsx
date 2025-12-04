@@ -10,6 +10,7 @@ import {
   Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/database';
 
 export default function Login() {
@@ -107,6 +108,9 @@ export default function Login() {
         if (data && data.length > 0) {
           const usuario = data[0];
 
+          await AsyncStorage.setItem('userId', usuario.id.toString());
+          await AsyncStorage.setItem('userData', JSON.stringify(usuario));
+
           if (usuario.tipo === 'admin') {
             navigation.navigate('AdminDashboard', { usuario });
           } else {
@@ -127,13 +131,10 @@ export default function Login() {
       <ScrollView style={styles.scrollView}>
 
         <View style={styles.headerContainer}>
-
-          {/* 🔥 LOGO DO SENAI NO TOPO */}
           <Image
             source={{ uri: 'https://logodownload.org/wp-content/uploads/2019/08/senai-logo-1.png' }}
             style={styles.logo}
           />
-
           <Text style={styles.headerTitle}>Login</Text>
         </View>
 
@@ -179,104 +180,19 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  lightBG: {
-    backgroundColor: '#2563EB',
-  },
-
-  darkBG: {
-    backgroundColor: '#1E293B',
-  },
-
-  scrollView: {
-    flex: 1,
-    padding: 28,
-  },
-
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 10,
-  },
-
-  logo: {
-    width: 190,
-    height: 60,
-    resizeMode: 'contain',
-    marginBottom: 10
-  },
-
-  headerTitle: {
-    fontSize: 36,
-    fontWeight: '99',
-    color: '#FFFFFF',
-    letterSpacing: 4
-  },
-
-  loginWrapper: {
-    width: '100%',
-  },
-
-  sectionTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#FFFFFF',
-  },
-
-  input: {
-    height: 58,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.25)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    marginBottom: 16,
-    fontSize: 17,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-
-  error: {
-    color: '#FF6B6B',
-    marginBottom: 12,
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  info: {
-    color: '#FFF93B',
-    marginBottom: 14,
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  button: {
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  primaryBtn: {
-    backgroundColor: '#1E40AF',
-  },
-
-  secondaryBtn: {
-    backgroundColor: '#475569',
-  },
-
-  buttonText: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '800',
-  }
+  lightBG: { backgroundColor: '#2563EB' },
+  darkBG: { backgroundColor: '#1E293B' },
+  scrollView: { flex: 1, padding: 28 },
+  headerContainer: { alignItems: 'center', marginBottom: 40, marginTop: 10 },
+  logo: { width: 190, height: 60, resizeMode: 'contain', marginBottom: 10 },
+  headerTitle: { fontSize: 36, fontWeight: '99', color: '#FFFFFF', letterSpacing: 4 },
+  loginWrapper: { width: '100%' },
+  sectionTitle: { fontSize: 30, fontWeight: '800', textAlign: 'center', marginBottom: 30, color: '#FFFFFF' },
+  input: { height: 58, borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 14, paddingHorizontal: 18, marginBottom: 16, fontSize: 17, color: '#FFFFFF', fontWeight: '500' },
+  error: { color: '#FF6B6B', marginBottom: 12, marginLeft: 6, fontSize: 14, fontWeight: '600' },
+  info: { color: '#FFF93B', marginBottom: 14, marginLeft: 6, fontSize: 14, fontWeight: '600' },
+  button: { borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 5 },
+  primaryBtn: { backgroundColor: '#1E40AF' },
+  secondaryBtn: { backgroundColor: '#475569' },
+  buttonText: { color: '#FFF', fontSize: 17, fontWeight: '800' }
 });
